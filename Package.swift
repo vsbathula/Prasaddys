@@ -5,17 +5,33 @@ import PackageDescription
 
 let package = Package(
     name: "prasaddys",
+    platforms: [
+        .iOS(.v15),     // Minimum iOS version
+        .macOS(.v12),   // Minimum macOS version
+        .tvOS(.v15)     // Minimum tvOS version
+        // .watchOS(.v8) // Add if you need watchOS support
+    ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "prasaddys",
             targets: ["prasaddys"]),
     ],
+    dependencies: [
+            // Dependencies declare other packages that this package depends on.
+             .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.9.0")),
+        ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .target(
-            name: "prasaddys"),
-
-    ]
+            // Targets are the basic building blocks of a package, defining a module or a test suite.
+            // Targets can depend on other targets in this package and products from dependencies.
+            .target(
+                name: "prasaddys",
+                dependencies: ["Alamofire"]),
+//                dependencies: [
+//                    .product(name: "Alamofire", package: "Alamofire")
+//                ]),
+            .testTarget(
+                name: "prasaddysTests",
+                dependencies: ["prasaddys"])
+        ]
 )
