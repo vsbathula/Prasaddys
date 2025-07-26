@@ -3,7 +3,6 @@ import XCTest
 
 final class APIClientTests: XCTestCase {
     
-    //    let baseURL = URL(string: "https://api.prasaddys.com/api/media")!
     let baseURL = URL(string: "http://127.0.0.1:5225/api/media")!
     let token = ""
     let albumRatingKey = "85472"
