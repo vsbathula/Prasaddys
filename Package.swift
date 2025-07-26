@@ -8,7 +8,7 @@ let package = Package(
     platforms: [
         .iOS(.v15),     // Minimum iOS version
         .macOS(.v12),   // Minimum macOS version
-        .tvOS(.v15)     // Minimum tvOS version
+        .tvOS(.v16)     // Minimum tvOS version
         // .watchOS(.v8) // Add if you need watchOS support
     ],
     products: [
