@@ -1,6 +1,6 @@
 import Foundation
 
-public struct TokenResponse: Codable {
+public struct TokenResponse: Codable, Sendable {
     public let accessToken: String
     public let refreshToken: String
     public let userId: String
