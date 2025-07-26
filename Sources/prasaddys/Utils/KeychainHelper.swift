@@ -1,14 +1,14 @@
 import Foundation
 import Security
 
-class KeychainHelper: @unchecked Sendable {
+public class KeychainHelper: @unchecked Sendable {
     static let shared = KeychainHelper()
 
     private init() {}
 
     // MARK: - Save Data
     @discardableResult
-    func save(_ data: Data, service: String, account: String) -> Bool {
+    public func save(_ data: Data, service: String, account: String) -> Bool {
         let query = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
@@ -34,7 +34,7 @@ class KeychainHelper: @unchecked Sendable {
     }
 
     // MARK: - Read Data
-    func read(service: String, account: String) -> Data? {
+    public func read(service: String, account: String) -> Data? {
         let query = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
@@ -58,7 +58,7 @@ class KeychainHelper: @unchecked Sendable {
 
     // MARK: - Delete
     @discardableResult
-    func delete(service: String, account: String) -> Bool {
+    public func delete(service: String, account: String) -> Bool {
         let query = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
@@ -75,7 +75,7 @@ class KeychainHelper: @unchecked Sendable {
 
     // MARK: - Date Helpers
     @discardableResult
-    func save(date: Date, service: String, account: String) -> Bool {
+    public func save(date: Date, service: String, account: String) -> Bool {
         // Use requiringSecureCoding: true for enhanced security
         if let data = try? NSKeyedArchiver.archivedData(withRootObject: date, requiringSecureCoding: true) {
             return save(data, service: service, account: account)
@@ -85,7 +85,7 @@ class KeychainHelper: @unchecked Sendable {
         }
     }
 
-    func readDate(service: String, account: String) -> Date? {
+    public func readDate(service: String, account: String) -> Date? {
         guard let data = read(service: service, account: account) else {
             return nil
         }

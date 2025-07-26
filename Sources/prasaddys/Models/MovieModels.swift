@@ -1,138 +1,138 @@
 import Foundation
 
 // MARK: - MoviesResponseModel
-struct MoviesResponseModel: Decodable {
-    let movies: [Movie]
-    let pagination: Pagination
+public struct MoviesResponseModel: Decodable {
+    public let movies: [Movie]
+    public let pagination: Pagination
 }
 
 // MARK: - Movie
-struct Movie: Decodable, Identifiable, Hashable {
-    var id: String { movieRatingKey }
-    let movieRatingKey: String
-    let movieTitle: String
-    let movieYear: Int?
-    let movieThumbnail: String?
+public struct Movie: Decodable, Identifiable, Hashable {
+    public var id: String { movieRatingKey }
+    public let movieRatingKey: String
+    public let movieTitle: String
+    public let movieYear: Int?
+    public let movieThumbnail: String?
 }
 
 // MARK: - MoviesPagination
 //struct MoviesPagination: Codable {
-//    let currentPage: Int
-//    let totalPages: Int
-//    let totalRecords: Int
-//    let limit: Int
+//    public let currentPage: Int
+//    public let totalPages: Int
+//    public let totalRecords: Int
+//    public let limit: Int
 //}
 
 // MARK: - MovieDetailResponse
-struct MovieDetailResponse: Codable {
-    let movieRatingKey: String
-    let movieStudio: String?
-    let movieTitle: String
-    let movieOriginalTitle: String?
-    let movieContentRating: String?
-    let movieSummary: String?
-    let movieAudienceRating: Double?
-    let movieYear: Int?
-    let movieThumbnail: String?
-    let movieArt: String?
-    let movieDuration: Int
-    let movieOriginallyAvailableAt: String?
-    let media: [Media]
-    let genre: [Genre]?
-    let country: [Country]?
-    let director: [Director]?
-    let writer: [Writer]?
-    let producer: [Producer]?
-    let rating: [Rating]?
-    let actor: [Actor]?
-    let tracks: [Track]?
+public struct MovieDetailResponse: Codable {
+    public let movieRatingKey: String
+    public let movieStudio: String?
+    public let movieTitle: String
+    public let movieOriginalTitle: String?
+    public let movieContentRating: String?
+    public let movieSummary: String?
+    public let movieAudienceRating: Double?
+    public let movieYear: Int?
+    public let movieThumbnail: String?
+    public let movieArt: String?
+    public let movieDuration: Int
+    public let movieOriginallyAvailableAt: String?
+    public let media: [Media]
+    public let genre: [Genre]?
+    public let country: [Country]?
+    public let director: [Director]?
+    public let writer: [Writer]?
+    public let producer: [Producer]?
+    public let rating: [Rating]?
+    public let actor: [Actor]?
+    public let tracks: [Track]?
 }
 
 // MARK: - Media
-struct Media: Codable {
-    let mediaId: Int
-    let mediaDuration: Int
-    let mediaBitRate: Int
-    let mediaWidth: Int
-    let mediaHeight: Int
-    let mediaAspectRatio: Double
-    let mediaAudioChannels: Int
-    let mediaAudioCodec: String
-    let mediaVideoCodec: String
-    let mediaContainer: String
-    let mediaVideoResolution: String
-    let mediaVideoFrameRate: String
-    let mediaVideoProfile: String
-    let part: [Part]
+public struct Media: Codable {
+    public let mediaId: Int
+    public let mediaDuration: Int
+    public let mediaBitRate: Int
+    public let mediaWidth: Int
+    public let mediaHeight: Int
+    public let mediaAspectRatio: Double
+    public let mediaAudioChannels: Int
+    public let mediaAudioCodec: String
+    public let mediaVideoCodec: String
+    public let mediaContainer: String
+    public let mediaVideoResolution: String
+    public let mediaVideoFrameRate: String
+    public let mediaVideoProfile: String
+    public let part: [Part]
 }
 
 // MARK: - Part
-struct Part: Codable {
-    let partId: Int
-    let partFile: String
-    let partKey: String
-    let partSize: Int
-    let partContainer: String
-    let stream: [Stream]
+public struct Part: Codable {
+    public let partId: Int
+    public let partFile: String
+    public let partKey: String
+    public let partSize: Int
+    public let partContainer: String
+    public let stream: [Stream]
 }
 
 // MARK: - Stream
-struct Stream: Codable {
-    let streamId: Int
-    let streamType: Int?
-    let streamCodec: String
-    let streamDisplayTitle: String
-    let streamExtendedDisplayTitle: String
-    let streamAudioChannelLayout: String?
-    let streamChannels: Int?
-    let streamSamplingRate: Int?
+public struct Stream: Codable {
+    public let streamId: Int
+    public let streamType: Int?
+    public let streamCodec: String
+    public let streamDisplayTitle: String
+    public let streamExtendedDisplayTitle: String
+    public let streamAudioChannelLayout: String?
+    public let streamChannels: Int?
+    public let streamSamplingRate: Int?
 }
 
 // MARK: - Genre
-struct Genre: Codable {
-    let genreId: Int
-    let genre: String
+public struct Genre: Codable {
+    public let genreId: Int
+    public let genre: String
 }
 
 // MARK: - Country
-struct Country: Codable {
-    let countryId: Int
-    let country: String
+public struct Country: Codable {
+    public let countryId: Int
+    public let country: String
 }
 
 // MARK: - Director
-struct Director: Codable {
-    let directorId: Int
-    let directorName: String
-    let directorThumb: String?
+public struct Director: Codable {
+    public let directorId: Int
+    public let directorName: String
+    public let directorThumb: String?
 }
 
 // MARK: - Writer
-struct Writer: Codable {
-    let writerId: Int
-    let writerName: String
-    let writerThumb: String?
+public struct Writer: Codable {
+    public let writerId: Int
+    public let writerName: String
+    public let writerThumb: String?
 }
 
 // MARK: - Producer
-struct Producer: Codable {
-    let producerId: Int
-    let producerName: String
-    let producerThumb: String?
+public struct Producer: Codable {
+    public let producerId: Int
+    public let producerName: String
+    public let producerThumb: String?
 }
 
 // MARK: - Actor
-struct Actor: Codable {
-    let actorId: Int
-    let actorName: String
-    let actorRole: String
-    let actorThumb: String?
+public struct Actor: Codable {
+    public let actorId: Int
+    public let actorName: String
+    public let actorRole: String
+    public let actorThumb: String?
 }
 
 // MARK: - Rating
-struct Rating: Codable {
-    let ratingImage: String
-    let ratingValue: Int
-    let ratingType: String
+public struct Rating: Codable {
+    public let ratingImage: String
+    public let ratingValue: Int
+    public let ratingType: String
 }
 

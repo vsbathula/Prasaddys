@@ -1,7 +1,7 @@
 import Foundation
 
-struct AppConstants {
-    struct Keychain {
+public struct AppConstants {
+    public struct Keychain {
         static let userEmailService = "UserEmail"
         static let userEmailAccount = "AuthenticatedUserEmail"
         static let userIdService = "UserIdService"

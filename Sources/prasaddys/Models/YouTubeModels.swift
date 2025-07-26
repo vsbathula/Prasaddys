@@ -1,16 +1,16 @@
 import Foundation
 
 // MARK: - YouTubeSearchResultsModel
-struct YouTubeSearchResultsModel: Codable {
-    let items: [YouTubeSearchResult]
+public struct YouTubeSearchResultsModel: Codable {
+    public let items: [YouTubeSearchResult]
 }
 
 // MARK: - YouTubeSearchResult
-struct YouTubeSearchResult: Codable, Identifiable {
-    let videoInfo: VideoID // Renamed from `id`
-    let snippet: Snippet
+public struct YouTubeSearchResult: Codable, Identifiable {
+    public let videoInfo: VideoID // Renamed from `id`
+    public let snippet: Snippet
 
-    var id: String { videoInfo.videoId } // Now `id` conforms to Identifiable
+    public var id: String { videoInfo.videoId } // Now `id` conforms to Identifiable
 
     private enum CodingKeys: String, CodingKey {
         case videoInfo = "id"
@@ -19,33 +19,33 @@ struct YouTubeSearchResult: Codable, Identifiable {
 }
 
 // MARK: - VideoID
-struct VideoID: Codable {
-    let kind: String
-    let videoId: String
+public struct VideoID: Codable {
+    public let kind: String
+    public let videoId: String
 }
 
 // MARK: - Snippet
-struct Snippet: Codable {
-    let publishedAt: String?
-    let channelId: String?
-    let title: String
-    let description: String
-    let thumbnails: Thumbnails
-    let channelTitle: String?
-    let liveBroadcastContent: String?
-    let publishTime: String?
+public struct Snippet: Codable {
+    public let publishedAt: String?
+    public let channelId: String?
+    public let title: String
+    public let description: String
+    public let thumbnails: Thumbnails
+    public let channelTitle: String?
+    public let liveBroadcastContent: String?
+    public let publishTime: String?
 }
 
 // MARK: - Thumbnails
-struct Thumbnails: Codable {
-    let `default`: ThumbnailDetail?
-    let medium: ThumbnailDetail?
-    let high: ThumbnailDetail?
+public struct Thumbnails: Codable {
+    public let `default`: ThumbnailDetail?
+    public let medium: ThumbnailDetail?
+    public let high: ThumbnailDetail?
 }
 
 // MARK: - ThumbnailDetail
-struct ThumbnailDetail: Codable {
-    let url: String
-    let width: Int?
-    let height: Int?
+public struct ThumbnailDetail: Codable {
+    public let url: String
+    public let width: Int?
+    public let height: Int?
 }

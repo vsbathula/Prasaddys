@@ -115,7 +115,7 @@ public class APIClient: @unchecked Sendable {
         return albumsResponse
     }
     
-    func fetchAlbumById(_ albumRatingKey: String) async throws -> AlbumDetailResponse {
+    public func fetchAlbumById(_ albumRatingKey: String) async throws -> AlbumDetailResponse {
         let url = baseURL.appendingPathComponent("/albums/album/\(albumRatingKey)")
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
@@ -143,7 +143,7 @@ public class APIClient: @unchecked Sendable {
         return albumDetail
     }
     
-    func searchAlbums(query: String, page: Int = 1, pageSize: Int = 20) async throws -> AlbumsResponseModel {
+    public func searchAlbums(query: String, page: Int = 1, pageSize: Int = 20) async throws -> AlbumsResponseModel {
             let url = baseURL.appendingPathComponent("/albums/search")
             
             let parameters: Parameters = [
