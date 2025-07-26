@@ -143,6 +143,40 @@ public class APIClient: @unchecked Sendable {
         return albumDetail
     }
     
+    func searchAlbums(query: String, page: Int = 1, pageSize: Int = 20) async throws -> AlbumsResponseModel {
+            let url = baseURL.appendingPathComponent("/albums/search")
+            
+            let parameters: Parameters = [
+                "q": query,
+                "page": page,
+                "limit": pageSize
+            ]
+            
+            var headers: HTTPHeaders = ["Accept": "application/json"]
+            if let token = authorizationToken {
+                headers.add(name: "Authorization", value: "Bearer \(token)")
+            }
+            
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            
+            let response = await session
+                .request(url, method: .get, parameters: parameters, headers: headers)
+                .validate(statusCode: 200..<300)
+                .serializingDecodable(AlbumsResponseModel.self, decoder: decoder)
+                .response
+            
+            if let error = response.error {
+                throw error
+            }
+            
+            guard let albumsResponse = response.value else {
+                throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in search albums response"])
+            }
+            
+            return albumsResponse
+        }
+    
 }
 
 public enum APIError: Error, Sendable {
