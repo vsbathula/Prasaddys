@@ -6,7 +6,7 @@ public struct TokenExpiryHelper {
     static func saveExpiryDate(_ date: Date) {
         if let expiryData = try? NSKeyedArchiver.archivedData(withRootObject: date, requiringSecureCoding: false) {
             // Check the return value of KeychainHelper.shared.save
-            if !KeychainHelper.shared.save(expiryData, service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.accessTokenExpiryAccount) {
+            if !KeychainHelper.shared.save(expiryData, service: AppConstants.Keychain.accessTokenExpiryService, account: AppConstants.Keychain.accessTokenExpiryAccount) {
                 print("❌ [TokenExpiryHelper] Failed to save expiry date to Keychain.")
             } else {
                 print("✅ [TokenExpiryHelper] Token expiry date saved.")
@@ -18,7 +18,7 @@ public struct TokenExpiryHelper {
 
     /// Reads expiry date from Keychain and checks if it's expired
     public static func isExpired() -> Bool {
-        guard let expiryData = KeychainHelper.shared.read(service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.accessTokenExpiryAccount),
+        guard let expiryData = KeychainHelper.shared.read(service: AppConstants.Keychain.accessTokenExpiryService, account: AppConstants.Keychain.accessTokenExpiryAccount),
               let expiryNSDate = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSDate.self, from: expiryData) else {
             print("⚠️ [TokenExpiryHelper] No expiry date found in Keychain or failed to unarchive. Assuming expired.")
             return true // Safely assume expired if data isn't available or readable

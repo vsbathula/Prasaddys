@@ -128,7 +128,7 @@ public class AuthManager: NSObject {
     
     // MARK: - Token Refresh
     public func refreshAccessToken() async throws -> TokenResponse {
-        guard let refreshTokenData = KeychainHelper.shared.read(service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.refreshTokenAccount),
+        guard let refreshTokenData = KeychainHelper.shared.read(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount),
               let refreshToken = String(data: refreshTokenData, encoding: .utf8) else {
             throw AuthError.missingTokenData
         }
@@ -150,9 +150,9 @@ public class AuthManager: NSObject {
     
     // MARK: - Token Management
     public func clearAllAuthTokens() {
-        KeychainHelper.shared.delete(service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.accessTokenAccount)
-        KeychainHelper.shared.delete(service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.refreshTokenAccount)
-        KeychainHelper.shared.delete(service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.accessTokenExpiryAccount)
+        KeychainHelper.shared.delete(service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount)
+        KeychainHelper.shared.delete(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount)
+        KeychainHelper.shared.delete(service: AppConstants.Keychain.accessTokenExpiryService, account: AppConstants.Keychain.accessTokenExpiryAccount)
         KeychainHelper.shared.delete(service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount)
     }
     
@@ -163,8 +163,8 @@ public class AuthManager: NSObject {
             throw AuthError.missingTokenData
         }
         
-        let savedAccess = KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.accessTokenAccount)
-        let savedRefresh = KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.refreshTokenAccount)
+        let savedAccess = KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount)
+        let savedRefresh = KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount)
         let savedUserId = KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount)
         
         if !savedAccess || !savedRefresh || !savedUserId {

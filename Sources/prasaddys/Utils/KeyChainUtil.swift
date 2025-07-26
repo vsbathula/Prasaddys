@@ -3,7 +3,7 @@ import Foundation
 public class KeyChainUtil {
     
     public static func getAccessToken() -> String? {
-        if let data = KeychainHelper.shared.read(service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.accessTokenAccount),
+        if let data = KeychainHelper.shared.read(service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount),
            let token = String(data: data, encoding: .utf8) {
             return "Bearer \(token)"
         }
@@ -11,7 +11,7 @@ public class KeyChainUtil {
     }
     
     public static func getRefreshToken() -> String? {
-        if let data = KeychainHelper.shared.read(service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.refreshTokenAccount) {
+        if let data = KeychainHelper.shared.read(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount) {
             return String(data: data, encoding: .utf8)
         }
         return nil
