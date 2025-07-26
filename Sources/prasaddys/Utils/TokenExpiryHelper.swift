@@ -1,6 +1,6 @@
 import Foundation
 
-struct TokenExpiryHelper {
+public struct TokenExpiryHelper {
 
     /// Saves a Date (token expiry) to Keychain
     static func saveExpiryDate(_ date: Date) {
@@ -17,7 +17,7 @@ struct TokenExpiryHelper {
     }
 
     /// Reads expiry date from Keychain and checks if it's expired
-    static func isExpired() -> Bool {
+    public static func isExpired() -> Bool {
         guard let expiryData = KeychainHelper.shared.read(service: AppConstants.Keychain.plexService, account: AppConstants.Keychain.accessTokenExpiryAccount),
               let expiryNSDate = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSDate.self, from: expiryData) else {
             print("⚠️ [TokenExpiryHelper] No expiry date found in Keychain or failed to unarchive. Assuming expired.")
