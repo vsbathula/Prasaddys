@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 public class KeychainHelper: @unchecked Sendable {
-    static let shared = KeychainHelper()
+    public static let shared = KeychainHelper()
 
     private init() {}
 
