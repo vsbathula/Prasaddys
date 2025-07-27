@@ -98,7 +98,7 @@ public class AuthManager: NSObject {
             
             session?.prefersEphemeralWebBrowserSession = true
             
-#if os(iOS)
+#if os(iOS) || os(macOS)
             session?.presentationContextProvider = self
 #endif
             
