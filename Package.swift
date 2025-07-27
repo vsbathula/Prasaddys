@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "prasaddys",
+    name: "Prasaddys",
     platforms: [
         .iOS(.v15),     // Minimum iOS version
         .macOS(.v12),   // Minimum macOS version
@@ -14,8 +14,8 @@ let package = Package(
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "prasaddys",
-            targets: ["prasaddys"]),
+            name: "Prasaddys",
+            targets: ["Prasaddys"]),
     ],
     dependencies: [
             // Dependencies declare other packages that this package depends on.
@@ -25,12 +25,12 @@ let package = Package(
             // Targets are the basic building blocks of a package, defining a module or a test suite.
             // Targets can depend on other targets in this package and products from dependencies.
             .target(
-                name: "prasaddys",
+                name: "Prasaddys",
                 dependencies: ["Alamofire"],
                 path: "Sources/prasaddys",
                 ),
             .testTarget(
-                name: "prasaddysTests",
-                dependencies: ["prasaddys"])
+                name: "PrasaddysTests",
+                dependencies: ["Prasaddys"])
         ]
 )
