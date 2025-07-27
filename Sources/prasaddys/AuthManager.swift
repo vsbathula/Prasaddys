@@ -45,18 +45,18 @@ public class AuthManager: NSObject {
 #endif
     
     public func startAuthorization(email: String) async throws -> String {
-#if os(tvOS)
+    #if os(tvOS)
         throw AuthError.unsupportedPlatform
-#else
+    #else
         verifier = PKCEHelper.generateCodeVerifier()
         let challenge = PKCEHelper.generateCodeChallenge(from: verifier)
-        
+
         guard let generatedState = PKCEHelper.generateState() else {
             throw AuthError.stateGenerationFailed
         }
-        
+
         state = generatedState
-        
+
         var components = URLComponents(url: baseURL.appendingPathComponent(authPath), resolvingAgainstBaseURL: false)!
         components.queryItems = [
             URLQueryItem(name: "response_type", value: "code"),
@@ -68,12 +68,12 @@ public class AuthManager: NSObject {
             URLQueryItem(name: "state", value: state),
             URLQueryItem(name: "email", value: email)
         ]
-        
+
         guard let url = components.url else {
             throw AuthError.invalidURL
         }
-        
-        return try await withCheckedThrowingContinuation { continuation in
+
+        let code: String = try await withCheckedThrowingContinuation { continuation in
             session = ASWebAuthenticationSession(
                 url: url,
                 callbackURLScheme: redirectScheme
@@ -82,7 +82,7 @@ public class AuthManager: NSObject {
                     continuation.resume(throwing: error)
                     return
                 }
-                
+
                 guard let callbackURL = callbackURL,
                       let queryItems = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)?.queryItems,
                       let code = queryItems.first(where: { $0.name == "code" })?.value,
@@ -91,23 +91,26 @@ public class AuthManager: NSObject {
                     continuation.resume(throwing: AuthError.stateMismatch)
                     return
                 }
-                
+
                 continuation.resume(returning: code)
             }
-            
+
             session?.prefersEphemeralWebBrowserSession = true
-            
-#if !os(tvOS)
+    #if !os(tvOS)
             session?.presentationContextProvider = self
-#endif
-            
+    #endif
             session?.start()
         }
-#endif
+
+        try await self.exchangeCodeForToken(authorizationCode: code)
+        return code
+    #endif
     }
+
+    
     
     // MARK: - Token Exchange
-    public func exchangeCodeForToken(authorizationCode: String) async throws -> TokenResponse {
+    public func exchangeCodeForToken(authorizationCode: String) async throws {
         let request = createTokenRequest(with: [
             "grant_type": "authorization_code",
             "code": authorizationCode,
@@ -123,11 +126,10 @@ public class AuthManager: NSObject {
         
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
         try saveTokens(tokenResponse)
-        return tokenResponse
     }
     
     // MARK: - Token Refresh
-    public func refreshAccessToken() async throws -> TokenResponse {
+    public func refreshAccessToken() async throws {
         guard let refreshTokenData = KeychainHelper.shared.read(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount),
               let refreshToken = String(data: refreshTokenData, encoding: .utf8) else {
             throw AuthError.missingTokenData
@@ -145,7 +147,6 @@ public class AuthManager: NSObject {
         
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
         try saveTokens(tokenResponse)
-        return tokenResponse
     }
     
     // MARK: - Token Management
