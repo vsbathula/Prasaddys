@@ -27,7 +27,7 @@ let package = Package(
             .target(
                 name: "Prasaddys",
                 dependencies: ["Alamofire"],
-                path: "Sources/prasaddys",
+                path: "Sources/Prasaddys",
                 ),
             .testTarget(
                 name: "PrasaddysTests",
