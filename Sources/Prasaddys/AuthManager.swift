@@ -161,9 +161,9 @@ public class AuthManager: NSObject {
     }
     
     public func saveTokens(_ tokenResponse: TokenResponse) throws {
-        guard let accessData = tokenResponse.accessToken.data(using: .utf8),
-              let refreshData = tokenResponse.refreshToken.data(using: .utf8),
-              let userIdData = tokenResponse.userId.data(using: .utf8) else {
+        guard let accessData = tokenResponse.access_token.data(using: .utf8),
+              let refreshData = tokenResponse.refresh_token.data(using: .utf8),
+              let userIdData = tokenResponse.user_id.data(using: .utf8) else {
             throw AuthError.missingTokenData
         }
         
@@ -175,7 +175,7 @@ public class AuthManager: NSObject {
             throw AuthError.missingTokenData
         }
         
-        if let expiresIn = tokenResponse.expiresIn {
+        if let expiresIn = tokenResponse.expires_in {
             let expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
             TokenExpiryHelper.saveExpiryDate(expiryDate)
         }
