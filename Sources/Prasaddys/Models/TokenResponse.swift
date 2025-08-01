@@ -1,8 +1,9 @@
 import Foundation
 
 public struct TokenResponse: Codable, Sendable {
-    public let accessToken: String
-    public let refreshToken: String
-    public let userId: String
-    public let expiresIn: Int?
+    public let access_token: String
+    public let refresh_token: String
+    public let token_type: String
+    public let user_id: String
+    public let expires_in: Int?
 }
