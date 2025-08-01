@@ -125,11 +125,6 @@ public class AuthManager: NSObject {
         ])
         
         let (data, response) = try await URLSession.shared.data(for: request)
-        if let string = String(data: data, encoding: .utf8) {
-            print("🔍 Raw Response Data:\n\(string)")
-        } else {
-            print("⚠️ Failed to decode response data as UTF-8.")
-        }
         try validateResponse(response: response, data: data, errorMessage: "Token exchange failed")
         
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
