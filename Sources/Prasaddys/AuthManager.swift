@@ -20,7 +20,7 @@ public class AuthManager: NSObject {
     
     private let authPath = "/authorize"
     private let tokenPath = "/token"
-    private let redirectScheme = "ramyam"
+    private let redirectScheme = "ramyam-m" //Change it if needed
     
     public init(baseURL: URL, clientId: String, redirectUri: String) {
         self.baseURL = baseURL
