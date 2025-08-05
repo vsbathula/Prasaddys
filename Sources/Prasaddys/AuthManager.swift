@@ -20,7 +20,7 @@ public class AuthManager: NSObject {
     
     private let authPath = "/authorize"
     private let tokenPath = "/token"
-    private let redirectScheme = "ramyam" //Change it if needed
+    private let redirectScheme = "ramyam-m" //Change it if needed
     
     public init(baseURL: URL, clientId: String, redirectUri: String) {
         self.baseURL = baseURL
@@ -92,7 +92,7 @@ public class AuthManager: NSObject {
                     continuation.resume(throwing: AuthError.stateMismatch)
                     return
                 }
-                
+                print("Callback URL: \(callbackURL.absoluteString)")
                 continuation.resume(returning: code)
             }
             
