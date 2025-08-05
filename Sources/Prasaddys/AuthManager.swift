@@ -254,7 +254,7 @@ public class AuthManager: NSObject {
         try saveTokens(tokenResponse)
     }
     
-    private func refreshAccessToken() async throws {
+    public func refreshAccessToken() async throws {
         guard let refreshTokenData = KeychainHelper.shared.read(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount),
               let refreshToken = String(data: refreshTokenData, encoding: .utf8) else {
             throw AuthError.missingTokenData
