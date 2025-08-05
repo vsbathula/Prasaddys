@@ -58,13 +58,16 @@ public class AuthManager: NSObject {
 #if os(tvOS)
         throw AuthError.unsupportedPlatform
 #else
+        // Cancel any existing session to avoid conflicts
+        session?.cancel()
+        session = nil
+        
         verifier = PKCEHelper.generateCodeVerifier()
         let challenge = PKCEHelper.generateCodeChallenge(from: verifier)
         
         guard let generatedState = PKCEHelper.generateState() else {
             throw AuthError.stateGenerationFailed
         }
-        
         state = generatedState
         
         var components = URLComponents(url: baseURL.appendingPathComponent(authPath), resolvingAgainstBaseURL: false)!
@@ -83,17 +86,23 @@ public class AuthManager: NSObject {
             throw AuthError.invalidURL
         }
         
-        let code: String = try await withCheckedThrowingContinuation { continuation in
+        let code: String = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            var hasResumed = false
+            func safeResume(_ result: Result<String, Error>) {
+                guard !hasResumed else { return }
+                hasResumed = true
+                continuation.resume(with: result)
+            }
+            
             session = ASWebAuthenticationSession(
                 url: url,
                 callbackURLScheme: redirectScheme
             ) { callbackURL, error in
                 if let error = error {
-                    // Handle user cancellation explicitly
                     if (error as NSError).code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
-                        continuation.resume(throwing: AuthError.userCancelled)
+                        safeResume(.failure(AuthError.userCancelled))
                     } else {
-                        continuation.resume(throwing: error)
+                        safeResume(.failure(error))
                     }
                     return
                 }
@@ -101,33 +110,32 @@ public class AuthManager: NSObject {
                 guard let callbackURL = callbackURL,
                       let queryItems = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)?.queryItems,
                       let code = queryItems.first(where: { $0.name == "code" })?.value,
-                      let returnedState = queryItems.first(where: { $0.name == "state" })?.value,
-                      returnedState == self.state else {
-                    continuation.resume(throwing: AuthError.stateMismatch)
+                      let returnedState = queryItems.first(where: { $0.name == "state" })?.value else {
+                    safeResume(.failure(AuthError.stateMismatch))
                     return
                 }
-                continuation.resume(returning: code)
+                
+                if returnedState != self.state {
+                    print("⚠️ State mismatch: expected \(self.state), got \(returnedState)")
+                    safeResume(.failure(AuthError.stateMismatch))
+                    return
+                }
+                
+                safeResume(.success(code))
             }
             
             session?.prefersEphemeralWebBrowserSession = true
             
-#if os(iOS) || os(macOS)
+        #if os(iOS) || os(macOS)
             session?.presentationContextProvider = self
-#endif
+        #endif
             
-#if os(macOS)
-            DispatchQueue.main.async {
-                // Activate app to avoid focus issues on macOS
-                NSApplication.shared.activate(ignoringOtherApps: true)
-                self.session?.start()
-            }
-#else
-            DispatchQueue.main.async {
-                self.session?.start()
-            }
-#endif
-            
+        #if os(macOS)
+            NSApplication.shared.activate(ignoringOtherApps: true)
+        #endif
+            self.session?.start()
         }
+
         
         try await self.exchangeCodeForToken(authorizationCode: code)
         return code
