@@ -37,7 +37,7 @@ public class AuthManager: NSObject {
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
     #elseif os(macOS)
-        return NSApplication.shared.windows.first ?? ASPresentationAnchor()
+        return NSApplication.shared.keyWindow ?? NSApplication.shared.windows.first ?? ASPresentationAnchor()
     #else
         return ASPresentationAnchor()
     #endif
@@ -202,7 +202,6 @@ public class AuthManager: NSObject {
     }
     
     // MARK: - tvOS Device Code Flow
-    
     #if os(tvOS)
     public struct DeviceCodeResponse: Codable {
         public let device_code: String
