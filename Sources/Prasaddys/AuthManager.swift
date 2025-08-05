@@ -8,64 +8,64 @@ import AppKit
 
 import Foundation
 import AuthenticationServices
+import CommonCrypto
 
+// MARK: - AuthManager Public Interface
+
+/// A class to manage the OAuth 2.0 authentication process using the Authorization Code Flow with PKCE and the Device Authorization Grant for tvOS.
 public class AuthManager: NSObject {
+    // MARK: - Properties
     private let baseURL: URL
     private let clientId: String
     private let redirectUri: String
-    
+    private let authPath = "/authorize"
+    private let tokenPath = "/token"
+    private let redirectScheme = "ramyam-m" // Must match the URL Scheme configured in Xcode
+
     private var verifier: String = ""
     private var state: String = ""
     private var session: ASWebAuthenticationSession?
-    
-    private let authPath = "/authorize"
-    private let tokenPath = "/token"
-    private let redirectScheme = "ramyam-m" // Change as needed
-    
+
+    // MARK: - Initialization
+    /// Initializes the authentication manager with the required configuration.
+    /// - Parameters:
+    ///   - baseURL: The base URL of the OAuth 2.0 authorization server.
+    ///   - clientId: The client ID for your application.
+    ///   - redirectUri: The redirect URI for the authorization code flow.
     public init(baseURL: URL, clientId: String, redirectUri: String) {
         self.baseURL = baseURL
         self.clientId = clientId
         self.redirectUri = redirectUri
     }
-    
-#if !os(tvOS)
-    // Thread-safe presentation anchor
-    @MainActor public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        if !Thread.isMainThread {
-            var anchor: ASPresentationAnchor!
-            DispatchQueue.main.sync {
-                anchor = self.presentationAnchor(for: session)
-            }
-            return anchor
-        }
-        
-    #if os(iOS)
+
+    // MARK: - Presentation Anchor (iOS & macOS)
+
+    #if !os(tvOS)
+    @MainActor
+    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        #if os(iOS)
         return UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-    #elseif os(macOS)
-        if let keyWindow = NSApplication.shared.keyWindow {
-            return keyWindow
-        }
-        if let mainWindow = NSApplication.shared.mainWindow {
-            return mainWindow
-        }
-        if let firstWindow = NSApplication.shared.windows.first {
-            return firstWindow
-        }
+        #elseif os(macOS)
+        return NSApplication.shared.windows.first ?? ASPresentationAnchor()
+        #else
         return ASPresentationAnchor()
-    #else
-        return ASPresentationAnchor()
-    #endif
+        #endif
     }
-#endif
+    #endif
     
+    // MARK: - Public API
+    
+    /// Starts the authorization process using the Authorization Code Flow with PKCE.
+    /// - Parameter email: The user's email address to pre-fill the login form.
+    /// - Returns: The authorization code received from the server.
     @MainActor
     public func startAuthorization(email: String) async throws -> String {
-    #if os(tvOS)
+        #if os(tvOS)
         throw AuthError.unsupportedPlatform
-    #else
+        #else
         verifier = PKCEHelper.generateCodeVerifier()
         let challenge = PKCEHelper.generateCodeChallenge(from: verifier)
         
@@ -91,13 +91,16 @@ public class AuthManager: NSObject {
             throw AuthError.invalidURL
         }
         
-        let code: String = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
-            session = ASWebAuthenticationSession(
+        let code: String = try await withCheckedThrowingContinuation { continuation in
+            self.session = ASWebAuthenticationSession(
                 url: url,
                 callbackURLScheme: redirectScheme
-            ) { callbackURL, error in
+            ) { [weak self] callbackURL, error in
+                guard let self = self else { return }
+                
                 if let error = error {
-                    if (error as NSError).code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
+                    // Check for user cancellation specifically
+                    if (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin {
                         continuation.resume(throwing: AuthError.userCancelled)
                     } else {
                         continuation.resume(throwing: error)
@@ -116,16 +119,13 @@ public class AuthManager: NSObject {
                 continuation.resume(returning: code)
             }
             
-            session?.prefersEphemeralWebBrowserSession = true
+            self.session?.prefersEphemeralWebBrowserSession = true
             
-        #if os(iOS) || os(macOS)
-            session?.presentationContextProvider = self
-        #endif
+            #if os(iOS) || os(macOS)
+            self.session?.presentationContextProvider = self
+            #endif
             
-        #if os(macOS)
-            NSApplication.shared.activate(ignoringOtherApps: true)
-        #endif
-            
+            // Start the session on the main thread
             DispatchQueue.main.async {
                 self.session?.start()
             }
@@ -133,12 +133,111 @@ public class AuthManager: NSObject {
         
         try await self.exchangeCodeForToken(authorizationCode: code)
         return code
-    #endif
+        #endif
     }
     
-    // MARK: - Token Exchange
+    /// Starts the Device Authorization Grant flow for tvOS.
+    /// - Parameter email: The user's email address.
+    /// - Returns: A tuple containing the device code, user code, verification URI, and polling interval.
+    #if os(tvOS)
+    public func startDeviceCodeFlow(email: String) async throws -> (deviceCode: String, userCode: String, verificationUri: String, interval: Int) {
+        var request = URLRequest(url: baseURL.appendingPathComponent("/device_authorize"))
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        let bodyParams = [
+            "client_id": clientId,
+            "scope": "read",
+            "email": email
+        ]
+        request.httpBody = bodyParams
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: "&")
+            .data(using: .utf8)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateResponse(response: response, data: data, errorMessage: "Device code request failed")
+        
+        let deviceCodeResponse = try JSONDecoder().decode(DeviceCodeResponse.self, from: data)
+        
+        return (
+            deviceCode: deviceCodeResponse.device_code,
+            userCode: deviceCodeResponse.user_code,
+            verificationUri: deviceCodeResponse.verification_uri,
+            interval: deviceCodeResponse.interval
+        )
+    }
+    
+    /// Polls the token endpoint until the user authorizes the device.
+    /// - Parameters:
+    ///   - deviceCode: The device code received from the initial request.
+    ///   - interval: The recommended polling interval in seconds.
+    public func pollForDeviceCodeToken(deviceCode: String, interval: Int) async throws {
+        let pollInterval = UInt64(interval) * 1_000_000_000 // seconds to nanoseconds
+        
+        while true {
+            try await Task.sleep(nanoseconds: pollInterval)
+            
+            let request = createTokenRequest(with: [
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "device_code": deviceCode,
+                "client_id": clientId
+            ])
+            
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                    let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+                    try saveTokens(tokenResponse)
+                    return
+                } else {
+                    // Check for authorization_pending or slow_down errors
+                    let tokenErrorResponse = try? JSONDecoder().decode(TokenErrorResponse.self, from: data)
+                    if tokenErrorResponse?.error == "authorization_pending" || tokenErrorResponse?.error == "slow_down" {
+                        continue
+                    } else if let tokenErrorResponse = tokenErrorResponse {
+                        throw AuthError.tokenRequestFailed(tokenErrorResponse.error_description ?? "Unknown error during polling")
+                    } else {
+                        throw AuthError.tokenRequestFailed(String(data: data, encoding: .utf8) ?? "Unknown error during polling")
+                    }
+                }
+            } catch let urlError as URLError where urlError.code == .timedOut {
+                continue // Retry on timeout
+            } catch {
+                throw error
+            }
+        }
+    }
+    #endif
+    
+    // MARK: - Token Management & Retrieval
+    
+    /// Retrieves the current access token from the keychain.
+    /// - Returns: The access token string, or nil if not found.
+    public func getCurrentAccessToken() -> String? {
+        guard let data = KeychainHelper.shared.read(service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount) else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    /// Retrieves the current user ID from the keychain.
+    /// - Returns: The user ID string, or nil if not found.
+    public func getUserId() -> String? {
+        guard let data = KeychainHelper.shared.read(service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+    
+    /// Clears all authentication tokens from the keychain.
+    public func logout() {
+        clearAllAuthTokens()
+    }
+    
+    // MARK: - Internal Helper Methods
     @MainActor
-    public func exchangeCodeForToken(authorizationCode: String) async throws {
+    private func exchangeCodeForToken(authorizationCode: String) async throws {
         let request = createTokenRequest(with: [
             "grant_type": "authorization_code",
             "code": authorizationCode,
@@ -155,8 +254,7 @@ public class AuthManager: NSObject {
         try saveTokens(tokenResponse)
     }
     
-    // MARK: - Token Refresh
-    public func refreshAccessToken() async throws {
+    private func refreshAccessToken() async throws {
         guard let refreshTokenData = KeychainHelper.shared.read(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount),
               let refreshToken = String(data: refreshTokenData, encoding: .utf8) else {
             throw AuthError.missingTokenData
@@ -176,27 +274,24 @@ public class AuthManager: NSObject {
         try saveTokens(tokenResponse)
     }
     
-    // MARK: - Token Management
-    public func clearAllAuthTokens() {
+    private func clearAllAuthTokens() {
         KeychainHelper.shared.delete(service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount)
         KeychainHelper.shared.delete(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount)
         KeychainHelper.shared.delete(service: AppConstants.Keychain.accessTokenExpiryService, account: AppConstants.Keychain.accessTokenExpiryAccount)
         KeychainHelper.shared.delete(service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount)
     }
     
-    public func saveTokens(_ tokenResponse: TokenResponse) throws {
+    private func saveTokens(_ tokenResponse: TokenResponse) throws {
         guard let accessData = tokenResponse.access_token.data(using: .utf8),
               let refreshData = tokenResponse.refresh_token.data(using: .utf8),
               let userIdData = tokenResponse.user_id.data(using: .utf8) else {
             throw AuthError.missingTokenData
         }
         
-        let savedAccess = KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount)
-        let savedRefresh = KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount)
-        let savedUserId = KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount)
-        
-        if !savedAccess || !savedRefresh || !savedUserId {
-            throw AuthError.missingTokenData
+        guard KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount) &&
+              KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount) &&
+              KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) else {
+            throw AuthError.tokenPersistenceFailed
         }
         
         if let expiresIn = tokenResponse.expires_in {
@@ -205,7 +300,6 @@ public class AuthManager: NSObject {
         }
     }
     
-    // MARK: - Helpers
     private func createTokenRequest(with parameters: [String: String]) -> URLRequest {
         let url = baseURL.appendingPathComponent(tokenPath)
         var request = URLRequest(url: url)
@@ -222,23 +316,57 @@ public class AuthManager: NSObject {
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
             let message = String(data: data, encoding: .utf8) ?? errorMessage
-            throw AuthError.tokenExchangeFailed(message)
+            throw AuthError.tokenRequestFailed(message)
         }
     }
 }
 
+// MARK: - ASWebAuthenticationPresentationContextProviding
 #if !os(tvOS)
 extension AuthManager: ASWebAuthenticationPresentationContextProviding {}
 #endif
 
-// MARK: - AuthError Enum
-public enum AuthError: Error {
+// MARK: - Supporting Types
+
+/// Represents the structure of an error response from the token endpoint.
+public struct TokenErrorResponse: Codable {
+    public let error: String
+    public let error_description: String?
+}
+
+/// Represents the structure of a successful device code response.
+#if os(tvOS)
+public struct DeviceCodeResponse: Codable {
+    public let device_code: String
+    public let user_code: String
+    public let verification_uri: String
+    public let expires_in: Int
+    public let interval: Int
+}
+#endif
+
+/// Defines the custom errors for the authentication process.
+public enum AuthError: Error, LocalizedError {
     case stateMismatch
     case invalidURL
     case missingTokenData
-    case tokenExchangeFailed(String)
-    case tokenRefreshFailed(String)
+    case tokenRequestFailed(String)
+    case tokenPersistenceFailed
     case stateGenerationFailed
     case unsupportedPlatform
     case userCancelled
+    
+    public var errorDescription: String? {
+        switch self {
+        case .stateMismatch: return "The returned state does not match the original state."
+        case .invalidURL: return "The URL for the request is invalid."
+        case .missingTokenData: return "Required token data is missing."
+        case .tokenRequestFailed(let message): return "Token request failed: \(message)"
+        case .tokenPersistenceFailed: return "Failed to save token data to the keychain."
+        case .stateGenerationFailed: return "Failed to generate a state parameter."
+        case .unsupportedPlatform: return "This authentication flow is not supported on the current platform."
+        case .userCancelled: return "The user cancelled the authentication process."
+        }
+    }
 }
+
