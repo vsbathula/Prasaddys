@@ -20,8 +20,7 @@ public class AuthManager: NSObject {
     
     private let authPath = "/authorize"
     private let tokenPath = "/token"
-    private let deviceCodePath = "/device/code"
-    private let redirectScheme = "ramyam-m"
+    private let redirectScheme = "ramyam-m" // Change as needed
     
     public init(baseURL: URL, clientId: String, redirectUri: String) {
         self.baseURL = baseURL
@@ -32,37 +31,31 @@ public class AuthManager: NSObject {
 #if !os(tvOS)
     @MainActor
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-#if os(iOS)
+    #if os(iOS)
         return UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-#elseif os(macOS)
+    #elseif os(macOS)
         return NSApplication.shared.windows.first ?? ASPresentationAnchor()
-#else
+    #else
         return ASPresentationAnchor()
-#endif
+    #endif
     }
 #endif
     
     @MainActor
     public func startAuthorization(email: String) async throws -> String {
-#if os(tvOS)
-        return try await startDeviceCodeFlow()
-#else
-        return try await startPKCEFlow(email: email)
-#endif
-    }
-    
-    // MARK: - PKCE Flow (iOS + macOS)
-    @MainActor
-    private func startPKCEFlow(email: String) async throws -> String {
+    #if os(tvOS)
+        throw AuthError.unsupportedPlatform
+    #else
         verifier = PKCEHelper.generateCodeVerifier()
         let challenge = PKCEHelper.generateCodeChallenge(from: verifier)
         
         guard let generatedState = PKCEHelper.generateState() else {
             throw AuthError.stateGenerationFailed
         }
+        
         state = generatedState
         
         var components = URLComponents(url: baseURL.appendingPathComponent(authPath), resolvingAgainstBaseURL: false)!
@@ -101,59 +94,21 @@ public class AuthManager: NSObject {
                 }
                 continuation.resume(returning: code)
             }
-#if os(iOS) || os(macOS)
-            session?.prefersEphemeralWebBrowserSession = true
-            session?.presentationContextProvider = self
-#endif
-            session?.start()
             
-            self.session?.start()
+            session?.prefersEphemeralWebBrowserSession = true
+            
+        #if os(iOS) || os(macOS)
+            session?.presentationContextProvider = self
+        #endif
+            
+            DispatchQueue.main.async {
+                self.session?.start()
+            }
         }
         
         try await self.exchangeCodeForToken(authorizationCode: code)
         return code
-    }
-    
-    // MARK: - Device Code Flow (tvOS)
-    @MainActor
-    private func startDeviceCodeFlow() async throws -> String {
-        struct DeviceCodeResponse: Codable {
-            let device_code: String
-            let user_code: String
-            let verification_uri: String
-            let expires_in: Int
-            let interval: Int
-        }
-        
-        // Step 1: Request device code
-        var request = URLRequest(url: baseURL.appendingPathComponent(deviceCodePath))
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.httpBody = "client_id=\(clientId)&scope=read".data(using: .utf8)
-        
-        let (data, _) = try await URLSession.shared.data(for: request)
-        let deviceCodeData = try JSONDecoder().decode(DeviceCodeResponse.self, from: data)
-        
-        print("📺 Go to \(deviceCodeData.verification_uri) and enter code: \(deviceCodeData.user_code)")
-        
-        // Step 2: Poll token endpoint
-        let startTime = Date()
-        while Date().timeIntervalSince(startTime) < Double(deviceCodeData.expires_in) {
-            try await Task.sleep(nanoseconds: UInt64(deviceCodeData.interval) * 1_000_000_000)
-            
-            var pollRequest = URLRequest(url: baseURL.appendingPathComponent(tokenPath))
-            pollRequest.httpMethod = "POST"
-            pollRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-            pollRequest.httpBody = "grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=\(deviceCodeData.device_code)&client_id=\(clientId)".data(using: .utf8)
-            
-            let (pollData, _) = try await URLSession.shared.data(for: pollRequest)
-            
-            if let tokenResponse = try? JSONDecoder().decode(TokenResponse.self, from: pollData) {
-                try saveTokens(tokenResponse)
-                return "device_code_authenticated"
-            }
-        }
-        throw AuthError.tokenExchangeFailed("Device code expired")
+    #endif
     }
     
     // MARK: - Token Exchange
@@ -173,6 +128,56 @@ public class AuthManager: NSObject {
         
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
         try saveTokens(tokenResponse)
+    }
+    
+    // MARK: - Token Refresh
+    public func refreshAccessToken() async throws {
+        guard let refreshTokenData = KeychainHelper.shared.read(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount),
+              let refreshToken = String(data: refreshTokenData, encoding: .utf8) else {
+            throw AuthError.missingTokenData
+        }
+        
+        let request = createTokenRequest(with: [
+            "grant_type": "refresh_token",
+            "refresh_token": refreshToken,
+            "client_id": clientId
+        ])
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        try validateResponse(response: response, data: data, errorMessage: "Token refresh failed")
+        
+        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+        try saveTokens(tokenResponse)
+    }
+    
+    // MARK: - Token Management
+    public func clearAllAuthTokens() {
+        KeychainHelper.shared.delete(service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount)
+        KeychainHelper.shared.delete(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount)
+        KeychainHelper.shared.delete(service: AppConstants.Keychain.accessTokenExpiryService, account: AppConstants.Keychain.accessTokenExpiryAccount)
+        KeychainHelper.shared.delete(service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount)
+    }
+    
+    public func saveTokens(_ tokenResponse: TokenResponse) throws {
+        guard let accessData = tokenResponse.access_token.data(using: .utf8),
+              let refreshData = tokenResponse.refresh_token.data(using: .utf8),
+              let userIdData = tokenResponse.user_id.data(using: .utf8) else {
+            throw AuthError.missingTokenData
+        }
+        
+        let savedAccess = KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount)
+        let savedRefresh = KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount)
+        let savedUserId = KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount)
+        
+        if !savedAccess || !savedRefresh || !savedUserId {
+            throw AuthError.missingTokenData
+        }
+        
+        if let expiresIn = tokenResponse.expires_in {
+            let expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
+            TokenExpiryHelper.saveExpiryDate(expiryDate)
+        }
     }
     
     // MARK: - Helpers
@@ -196,20 +201,83 @@ public class AuthManager: NSObject {
         }
     }
     
-    public func saveTokens(_ tokenResponse: TokenResponse) throws {
-        guard let accessData = tokenResponse.access_token.data(using: .utf8),
-              let refreshData = tokenResponse.refresh_token.data(using: .utf8) else {
-            throw AuthError.missingTokenData
-        }
-        _ = KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount)
-        _ = KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount)
+    // MARK: - tvOS Device Code Flow
+    
+    #if os(tvOS)
+    public struct DeviceCodeResponse: Codable {
+        public let device_code: String
+        public let user_code: String
+        public let verification_uri: String
+        public let expires_in: Int
+        public let interval: Int
     }
+    
+    @MainActor
+    public func startDeviceCodeFlow(email: String) async throws -> (deviceCode: String, userCode: String, verificationUri: String, interval: Int) {
+        var request = URLRequest(url: baseURL.appendingPathComponent("/device_authorize"))
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        let bodyParams = [
+            "client_id": clientId,
+            "scope": "read",
+            "email": email
+        ]
+        request.httpBody = bodyParams
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: "&")
+            .data(using: .utf8)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateResponse(response: response, data: data, errorMessage: "Device code request failed")
+        
+        let deviceCodeResponse = try JSONDecoder().decode(DeviceCodeResponse.self, from: data)
+        
+        return (
+            deviceCode: deviceCodeResponse.device_code,
+            userCode: deviceCodeResponse.user_code,
+            verificationUri: deviceCodeResponse.verification_uri,
+            interval: deviceCodeResponse.interval
+        )
+    }
+    
+    public func pollForDeviceCodeToken(deviceCode: String, interval: Int) async throws {
+        let pollInterval = UInt64(interval) * 1_000_000_000 // seconds to nanoseconds
+        
+        while true {
+            try await Task.sleep(nanoseconds: pollInterval)
+            
+            let request = createTokenRequest(with: [
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "device_code": deviceCode,
+                "client_id": clientId
+            ])
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode == 200 {
+                    let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+                    try saveTokens(tokenResponse)
+                    return
+                } else if httpResponse.statusCode == 428 || httpResponse.statusCode == 400 {
+                    // Authorization pending or slow_down
+                    continue
+                } else {
+                    let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+                    throw AuthError.tokenExchangeFailed(message)
+                }
+            }
+        }
+    }
+    #endif
 }
 
 #if !os(tvOS)
 extension AuthManager: ASWebAuthenticationPresentationContextProviding {}
 #endif
 
+// MARK: - AuthError Enum
 public enum AuthError: Error {
     case stateMismatch
     case invalidURL
