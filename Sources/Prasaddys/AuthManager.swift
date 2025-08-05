@@ -31,24 +31,33 @@ public class AuthManager: NSObject {
 #if !os(tvOS)
     @MainActor
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-    #if os(iOS)
+#if os(iOS)
         return UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-    #elseif os(macOS)
-        return NSApplication.shared.keyWindow ?? NSApplication.shared.windows.first ?? ASPresentationAnchor()
-    #else
+#elseif os(macOS)
+        if let keyWindow = NSApplication.shared.keyWindow {
+            return keyWindow
+        }
+        if let mainWindow = NSApplication.shared.mainWindow {
+            return mainWindow
+        }
+        if let firstWindow = NSApplication.shared.windows.first {
+            return firstWindow
+        }
         return ASPresentationAnchor()
-    #endif
+#else
+        return ASPresentationAnchor()
+#endif
     }
 #endif
     
     @MainActor
     public func startAuthorization(email: String) async throws -> String {
-    #if os(tvOS)
+#if os(tvOS)
         throw AuthError.unsupportedPlatform
-    #else
+#else
         verifier = PKCEHelper.generateCodeVerifier()
         let challenge = PKCEHelper.generateCodeChallenge(from: verifier)
         
@@ -80,7 +89,12 @@ public class AuthManager: NSObject {
                 callbackURLScheme: redirectScheme
             ) { callbackURL, error in
                 if let error = error {
-                    continuation.resume(throwing: error)
+                    // Handle user cancellation explicitly
+                    if (error as NSError).code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
+                        continuation.resume(throwing: AuthError.userCancelled)
+                    } else {
+                        continuation.resume(throwing: error)
+                    }
                     return
                 }
                 
@@ -97,18 +111,27 @@ public class AuthManager: NSObject {
             
             session?.prefersEphemeralWebBrowserSession = true
             
-        #if os(iOS) || os(macOS)
+#if os(iOS) || os(macOS)
             session?.presentationContextProvider = self
-        #endif
+#endif
             
+#if os(macOS)
+            DispatchQueue.main.async {
+                // Activate app to avoid focus issues on macOS
+                NSApplication.shared.activate(ignoringOtherApps: true)
+                self.session?.start()
+            }
+#else
             DispatchQueue.main.async {
                 self.session?.start()
             }
+#endif
+            
         }
         
         try await self.exchangeCodeForToken(authorizationCode: code)
         return code
-    #endif
+#endif
     }
     
     // MARK: - Token Exchange
@@ -202,7 +225,7 @@ public class AuthManager: NSObject {
     }
     
     // MARK: - tvOS Device Code Flow
-    #if os(tvOS)
+#if os(tvOS)
     public struct DeviceCodeResponse: Codable {
         public let device_code: String
         public let user_code: String
@@ -269,7 +292,7 @@ public class AuthManager: NSObject {
             }
         }
     }
-    #endif
+#endif
 }
 
 #if !os(tvOS)
