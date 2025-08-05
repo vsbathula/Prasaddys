@@ -92,7 +92,6 @@ public class AuthManager: NSObject {
                     continuation.resume(throwing: AuthError.stateMismatch)
                     return
                 }
-                print("Callback URL: \(callbackURL.absoluteString)")
                 continuation.resume(returning: code)
             }
             
@@ -102,7 +101,10 @@ public class AuthManager: NSObject {
             session?.presentationContextProvider = self
 #endif
             
-            self.session?.start()
+            DispatchQueue.main.async {
+                self.session?.start()
+            }
+
         }
         
         try await self.exchangeCodeForToken(authorizationCode: code)
