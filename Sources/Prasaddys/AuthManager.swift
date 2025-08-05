@@ -29,14 +29,22 @@ public class AuthManager: NSObject {
     }
     
 #if !os(tvOS)
-    @MainActor
-    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-#if os(iOS)
+    // Thread-safe presentation anchor
+    @MainActor public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        if !Thread.isMainThread {
+            var anchor: ASPresentationAnchor!
+            DispatchQueue.main.sync {
+                anchor = self.presentationAnchor(for: session)
+            }
+            return anchor
+        }
+        
+    #if os(iOS)
         return UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-#elseif os(macOS)
+    #elseif os(macOS)
         if let keyWindow = NSApplication.shared.keyWindow {
             return keyWindow
         }
@@ -47,27 +55,24 @@ public class AuthManager: NSObject {
             return firstWindow
         }
         return ASPresentationAnchor()
-#else
+    #else
         return ASPresentationAnchor()
-#endif
+    #endif
     }
 #endif
     
     @MainActor
     public func startAuthorization(email: String) async throws -> String {
-#if os(tvOS)
+    #if os(tvOS)
         throw AuthError.unsupportedPlatform
-#else
-        // Cancel any existing session to avoid conflicts
-        session?.cancel()
-        session = nil
-        
+    #else
         verifier = PKCEHelper.generateCodeVerifier()
         let challenge = PKCEHelper.generateCodeChallenge(from: verifier)
         
         guard let generatedState = PKCEHelper.generateState() else {
             throw AuthError.stateGenerationFailed
         }
+        
         state = generatedState
         
         var components = URLComponents(url: baseURL.appendingPathComponent(authPath), resolvingAgainstBaseURL: false)!
@@ -87,22 +92,15 @@ public class AuthManager: NSObject {
         }
         
         let code: String = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
-            var hasResumed = false
-            func safeResume(_ result: Result<String, Error>) {
-                guard !hasResumed else { return }
-                hasResumed = true
-                continuation.resume(with: result)
-            }
-            
             session = ASWebAuthenticationSession(
                 url: url,
                 callbackURLScheme: redirectScheme
             ) { callbackURL, error in
                 if let error = error {
                     if (error as NSError).code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
-                        safeResume(.failure(AuthError.userCancelled))
+                        continuation.resume(throwing: AuthError.userCancelled)
                     } else {
-                        safeResume(.failure(error))
+                        continuation.resume(throwing: error)
                     }
                     return
                 }
@@ -110,18 +108,12 @@ public class AuthManager: NSObject {
                 guard let callbackURL = callbackURL,
                       let queryItems = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)?.queryItems,
                       let code = queryItems.first(where: { $0.name == "code" })?.value,
-                      let returnedState = queryItems.first(where: { $0.name == "state" })?.value else {
-                    safeResume(.failure(AuthError.stateMismatch))
+                      let returnedState = queryItems.first(where: { $0.name == "state" })?.value,
+                      returnedState == self.state else {
+                    continuation.resume(throwing: AuthError.stateMismatch)
                     return
                 }
-                
-                if returnedState != self.state {
-                    print("⚠️ State mismatch: expected \(self.state), got \(returnedState)")
-                    safeResume(.failure(AuthError.stateMismatch))
-                    return
-                }
-                
-                safeResume(.success(code))
+                continuation.resume(returning: code)
             }
             
             session?.prefersEphemeralWebBrowserSession = true
@@ -133,13 +125,15 @@ public class AuthManager: NSObject {
         #if os(macOS)
             NSApplication.shared.activate(ignoringOtherApps: true)
         #endif
-            self.session?.start()
+            
+            DispatchQueue.main.async {
+                self.session?.start()
+            }
         }
-
         
         try await self.exchangeCodeForToken(authorizationCode: code)
         return code
-#endif
+    #endif
     }
     
     // MARK: - Token Exchange
@@ -231,76 +225,6 @@ public class AuthManager: NSObject {
             throw AuthError.tokenExchangeFailed(message)
         }
     }
-    
-    // MARK: - tvOS Device Code Flow
-#if os(tvOS)
-    public struct DeviceCodeResponse: Codable {
-        public let device_code: String
-        public let user_code: String
-        public let verification_uri: String
-        public let expires_in: Int
-        public let interval: Int
-    }
-    
-    @MainActor
-    public func startDeviceCodeFlow(email: String) async throws -> (deviceCode: String, userCode: String, verificationUri: String, interval: Int) {
-        var request = URLRequest(url: baseURL.appendingPathComponent("/device_authorize"))
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
-        let bodyParams = [
-            "client_id": clientId,
-            "scope": "read",
-            "email": email
-        ]
-        request.httpBody = bodyParams
-            .map { "\($0.key)=\($0.value)" }
-            .joined(separator: "&")
-            .data(using: .utf8)
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try validateResponse(response: response, data: data, errorMessage: "Device code request failed")
-        
-        let deviceCodeResponse = try JSONDecoder().decode(DeviceCodeResponse.self, from: data)
-        
-        return (
-            deviceCode: deviceCodeResponse.device_code,
-            userCode: deviceCodeResponse.user_code,
-            verificationUri: deviceCodeResponse.verification_uri,
-            interval: deviceCodeResponse.interval
-        )
-    }
-    
-    public func pollForDeviceCodeToken(deviceCode: String, interval: Int) async throws {
-        let pollInterval = UInt64(interval) * 1_000_000_000 // seconds to nanoseconds
-        
-        while true {
-            try await Task.sleep(nanoseconds: pollInterval)
-            
-            let request = createTokenRequest(with: [
-                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-                "device_code": deviceCode,
-                "client_id": clientId
-            ])
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                if httpResponse.statusCode == 200 {
-                    let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
-                    try saveTokens(tokenResponse)
-                    return
-                } else if httpResponse.statusCode == 428 || httpResponse.statusCode == 400 {
-                    // Authorization pending or slow_down
-                    continue
-                } else {
-                    let message = String(data: data, encoding: .utf8) ?? "Unknown error"
-                    throw AuthError.tokenExchangeFailed(message)
-                }
-            }
-        }
-    }
-#endif
 }
 
 #if !os(tvOS)
