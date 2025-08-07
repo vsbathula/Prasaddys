@@ -4,12 +4,12 @@ import Security
 public class KeychainHelper: @unchecked Sendable {
     public static let shared = KeychainHelper()
 
-    // Thread-safe serial queue for synchronizing Keychain access
+    // Serial queue for synchronizing access
     private let keychainQueue = DispatchQueue(label: "com.ramyam.keychain.queue")
 
     private init() {}
 
-    // MARK: - Save Data
+    // MARK: - Save Raw Data
     @discardableResult
     public func save(_ data: Data, service: String, account: String) -> Bool {
         return keychainQueue.sync {
@@ -19,6 +19,7 @@ public class KeychainHelper: @unchecked Sendable {
                 kSecAttrAccount: account
             ] as CFDictionary
 
+            // Delete any existing item
             SecItemDelete(query)
 
             let attributes = [
@@ -38,7 +39,7 @@ public class KeychainHelper: @unchecked Sendable {
         }
     }
 
-    // MARK: - Read Data
+    // MARK: - Read Raw Data
     public func read(service: String, account: String) -> Data? {
         return keychainQueue.sync {
             let query = [
@@ -82,35 +83,31 @@ public class KeychainHelper: @unchecked Sendable {
         }
     }
 
-    // MARK: - Date Helpers
+    // MARK: - Date Helpers (NO sync here)
     @discardableResult
     public func save(date: Date, service: String, account: String) -> Bool {
-        keychainQueue.sync {
-            guard let data = try? NSKeyedArchiver.archivedData(withRootObject: date, requiringSecureCoding: true) else {
-                print("❌ Failed to archive Date for keychain for account: \(account)")
-                return false
-            }
-            return save(data, service: service, account: account)
+        guard let data = try? NSKeyedArchiver.archivedData(withRootObject: date, requiringSecureCoding: true) else {
+            print("❌ Failed to archive Date for keychain for account: \(account)")
+            return false
         }
+        return save(data, service: service, account: account) // Already thread-safe
     }
 
     public func readDate(service: String, account: String) -> Date? {
-        return keychainQueue.sync {
-            guard let data = read(service: service, account: account) else {
-                return nil
-            }
+        guard let data = read(service: service, account: account) else {
+            return nil
+        }
 
-            do {
-                if let date = try NSKeyedUnarchiver.unarchivedObject(ofClass: NSDate.self, from: data) as Date? {
-                    return date
-                } else {
-                    print("❌ Keychain: Unarchived data was not a Date object for account: \(account)")
-                    return nil
-                }
-            } catch {
-                print("❌ Keychain: Failed to unarchive Date from Keychain for account: \(account): \(error.localizedDescription)")
+        do {
+            if let date = try NSKeyedUnarchiver.unarchivedObject(ofClass: NSDate.self, from: data) as Date? {
+                return date
+            } else {
+                print("❌ Keychain: Unarchived data was not a Date object for account: \(account)")
                 return nil
             }
+        } catch {
+            print("❌ Keychain: Failed to unarchive Date from Keychain for account: \(account): \(error.localizedDescription)")
+            return nil
         }
     }
 }
