@@ -106,21 +106,23 @@ public class AuthManager: NSObject {
             self.session?.prefersEphemeralWebBrowserSession = true
             self.session?.presentationContextProvider = self
             
-//            DispatchQueue.main.async {
-//                print("Starting ASWebAuthenticationSession with URL: \(url)")
-//                let started = self.session?.start()
-//                print("Session started: \(started ?? false)")
-//            }
-            await MainActor.run {
-                let started = self.session?.start()
-                print("Session start called via MainActor: \(started ?? false)")
+            //            DispatchQueue.main.async {
+            //                print("Starting ASWebAuthenticationSession with URL: \(url)")
+            //                let started = self.session?.start()
+            //                print("Session started: \(started ?? false)")
+            //            }
+            Task {
+                await MainActor.run {
+                    let started = self.session?.start()
+                    print("Session start called via MainActor: \(started ?? false)")
+                }
             }
         }
         
         // This line attempts to exchange the code for a token,
         // but the prompt asked to make the AuthManager work. This part is already correct.
-         try await self.exchangeCodeForToken(authorizationCode: code)
-//        return code
+        try await self.exchangeCodeForToken(authorizationCode: code)
+        //        return code
 #endif
     }
     
@@ -217,23 +219,23 @@ public class AuthManager: NSObject {
     }
     
     
-//    // MARK: - Presentation Anchor (iOS & macOS)
-//    
-//#if !os(tvOS)
-//    @MainActor
-//    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-//#if os(iOS)
-//        return UIApplication.shared.connectedScenes
-//            .compactMap { $0 as? UIWindowScene }
-//            .flatMap { $0.windows }
-//            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-//#elseif os(macOS)
-//        return NSApplication.shared.windows.first ?? ASPresentationAnchor()
-//#else
-//        return ASPresentationAnchor()
-//#endif
-//    }
-//#endif
+    //    // MARK: - Presentation Anchor (iOS & macOS)
+    //    
+    //#if !os(tvOS)
+    //    @MainActor
+    //    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    //#if os(iOS)
+    //        return UIApplication.shared.connectedScenes
+    //            .compactMap { $0 as? UIWindowScene }
+    //            .flatMap { $0.windows }
+    //            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    //#elseif os(macOS)
+    //        return NSApplication.shared.windows.first ?? ASPresentationAnchor()
+    //#else
+    //        return ASPresentationAnchor()
+    //#endif
+    //    }
+    //#endif
     
     
     
@@ -302,32 +304,32 @@ public class AuthManager: NSObject {
         print("[Refersh Token] \(String(describing: tokenResponse.refresh_token.data(using: .utf8)))")
         
         var saveSuccess = true
-
+        
         if !KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount) {
             print("❌ Failed to save access token.")
             saveSuccess = false
         }
-
+        
         if !KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount) {
             print("❌ Failed to save refresh token.")
             saveSuccess = false
         }
-
+        
         if !KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) {
             print("❌ Failed to save user ID.")
             saveSuccess = false
         }
-
+        
         if saveSuccess {
             print("✅ [AuthManager] All tokens and user ID saved successfully.")
         } else {
             throw AuthError.tokenPersistenceFailed
         }
-//        guard KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount) &&
-//                KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount) &&
-//                KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) else {
-//            throw AuthError.tokenPersistenceFailed
-//        }
+        //        guard KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount) &&
+        //                KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount) &&
+        //                KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) else {
+        //            throw AuthError.tokenPersistenceFailed
+        //        }
         
         if let expiresIn = tokenResponse.expires_in {
             let expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
@@ -362,17 +364,17 @@ public class AuthManager: NSObject {
 extension AuthManager: ASWebAuthenticationPresentationContextProviding {
     @MainActor
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        #if os(iOS)
+#if os(iOS)
         return UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-        #elseif os(macOS)
+#elseif os(macOS)
         print("Available windows: \(NSApplication.shared.windows)")
         return NSApplication.shared.windows.first ?? ASPresentationAnchor()
-        #else
+#else
         return ASPresentationAnchor()
-        #endif
+#endif
     }
 }
 #endif
