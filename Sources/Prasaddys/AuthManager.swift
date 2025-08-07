@@ -292,8 +292,8 @@ public class AuthManager: NSObject {
               let userIdData = tokenResponse.user_id.data(using: .utf8) else {
             throw AuthError.missingTokenData
         }
-        print("[Access Token] \(accessData)")
-        print("[Refersh Token] \(refreshData)")
+        print("[Access Token] \(String(describing: tokenResponse.access_token.data(using: .utf8)))")
+        print("[Refersh Token] \(String(describing: tokenResponse.refresh_token.data(using: .utf8)))")
         
         var saveSuccess = true
 
