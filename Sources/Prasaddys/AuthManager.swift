@@ -336,7 +336,7 @@ public class AuthManager: NSObject {
             .map { "\($0.key)=\($0.value)" }
             .joined(separator: "&")
             .data(using: .utf8)
-        print("[createTokenRequest] \(url)")
+        print("[createTokenRequest] \(request)")
         return request
     }
     
