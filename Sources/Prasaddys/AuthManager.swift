@@ -46,7 +46,7 @@ public class AuthManager: NSObject {
     /// - Parameter email: The user's email address to pre-fill the login form.
     /// - Returns: The authorization code received from the server.
     @MainActor
-    public func startAuthorization(email: String) async throws -> String {
+    public func startAuthorization(email: String) async throws {
 #if os(tvOS)
         throw AuthError.unsupportedPlatform
 #else
@@ -113,8 +113,8 @@ public class AuthManager: NSObject {
         
         // This line attempts to exchange the code for a token,
         // but the prompt asked to make the AuthManager work. This part is already correct.
-        // try await self.exchangeCodeForToken(authorizationCode: code)
-        return code
+         try await self.exchangeCodeForToken(authorizationCode: code)
+//        return code
 #endif
     }
     
