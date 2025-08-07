@@ -293,11 +293,33 @@ public class AuthManager: NSObject {
             throw AuthError.missingTokenData
         }
         
-        guard KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount) &&
-                KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount) &&
-                KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) else {
+        var saveSuccess = true
+
+        if !KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount) {
+            print("❌ Failed to save access token.")
+            saveSuccess = false
+        }
+
+        if !KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount) {
+            print("❌ Failed to save refresh token.")
+            saveSuccess = false
+        }
+
+        if !KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) {
+            print("❌ Failed to save user ID.")
+            saveSuccess = false
+        }
+
+        if saveSuccess {
+            print("✅ [AuthManager] All tokens and user ID saved successfully.")
+        } else {
             throw AuthError.tokenPersistenceFailed
         }
+//        guard KeychainHelper.shared.save(accessData, service: AppConstants.Keychain.accessTokenService, account: AppConstants.Keychain.accessTokenAccount) &&
+//                KeychainHelper.shared.save(refreshData, service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount) &&
+//                KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) else {
+//            throw AuthError.tokenPersistenceFailed
+//        }
         
         if let expiresIn = tokenResponse.expires_in {
             let expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
@@ -314,6 +336,7 @@ public class AuthManager: NSObject {
             .map { "\($0.key)=\($0.value)" }
             .joined(separator: "&")
             .data(using: .utf8)
+        print("[createTokenRequest] \(url)")
         return request
     }
     
