@@ -218,28 +218,6 @@ public class AuthManager: NSObject {
         try saveTokens(tokenResponse)
     }
     
-    
-    //    // MARK: - Presentation Anchor (iOS & macOS)
-    //
-    //#if !os(tvOS)
-    //    @MainActor
-    //    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-    //#if os(iOS)
-    //        return UIApplication.shared.connectedScenes
-    //            .compactMap { $0 as? UIWindowScene }
-    //            .flatMap { $0.windows }
-    //            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-    //#elseif os(macOS)
-    //        return NSApplication.shared.windows.first ?? ASPresentationAnchor()
-    //#else
-    //        return ASPresentationAnchor()
-    //#endif
-    //    }
-    //#endif
-    
-    
-    
-    
     // MARK: - Token Management & Retrieval
     
     /// Retrieves the current access token from the keychain.
