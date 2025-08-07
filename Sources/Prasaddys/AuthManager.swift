@@ -106,11 +106,14 @@ public class AuthManager: NSObject {
             self.session?.prefersEphemeralWebBrowserSession = true
             self.session?.presentationContextProvider = self
             
-            DispatchQueue.main.async {
-//                self.session?.start()
-                print("Starting ASWebAuthenticationSession with URL: \(url)")
+//            DispatchQueue.main.async {
+//                print("Starting ASWebAuthenticationSession with URL: \(url)")
+//                let started = self.session?.start()
+//                print("Session started: \(started ?? false)")
+//            }
+            await MainActor.run {
                 let started = self.session?.start()
-                print("Session started: \(started ?? false)")
+                print("Session start called via MainActor: \(started ?? false)")
             }
         }
         
@@ -365,6 +368,7 @@ extension AuthManager: ASWebAuthenticationPresentationContextProviding {
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
         #elseif os(macOS)
+        print("Available windows: \(NSApplication.shared.windows)")
         return NSApplication.shared.windows.first ?? ASPresentationAnchor()
         #else
         return ASPresentationAnchor()
