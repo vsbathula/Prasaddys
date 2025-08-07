@@ -1,8 +1,6 @@
-#if canImport(UIKit)
+#if os(iOS)
 import UIKit
-#endif
-
-#if canImport(AppKit)
+#elseif os(macOS)
 import AppKit
 #endif
 
