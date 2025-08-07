@@ -2,7 +2,7 @@ import SwiftUI
 
 public class DeviceUtil {
 
-    public static func getOrCreateUUID() -> String {
+    @MainActor public static func getOrCreateUUID() -> String {
         if let existingUUID = KeyChainUtil.getDeviceUuid(), !existingUUID.isEmpty {
             return existingUUID
         }
