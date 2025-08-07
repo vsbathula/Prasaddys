@@ -13,6 +13,7 @@ import CommonCrypto
 // MARK: - AuthManager Public Interface
 
 /// A class to manage the OAuth 2.0 authentication process using the Authorization Code Flow with PKCE and the Device Authorization Grant for tvOS.
+@MainActor
 public class AuthManager: NSObject {
     // MARK: - Properties
     private let baseURL: URL
@@ -252,12 +253,12 @@ public class AuthManager: NSObject {
     }
     
     /// Clears all authentication tokens from the keychain.
+    @MainActor
     public func logout() {
         clearAllAuthTokens()
     }
     
-    
-    
+    @MainActor
     public func refreshAccessToken() async throws {
         guard let refreshTokenData = KeychainHelper.shared.read(service: AppConstants.Keychain.refreshTokenService, account: AppConstants.Keychain.refreshTokenAccount),
               let refreshToken = String(data: refreshTokenData, encoding: .utf8) else {
