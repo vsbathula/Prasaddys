@@ -341,19 +341,9 @@ public class AuthManager: NSObject {
 #if !os(tvOS)
 extension AuthManager: ASWebAuthenticationPresentationContextProviding {
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        // ✅ Force execution on main thread
-        if !Thread.isMainThread {
-            var anchor: ASPresentationAnchor!
-            DispatchQueue.main.sync {
-                anchor = Self.resolvePresentationAnchor()
-            }
-            return anchor
-        }
+        // ✅ Ensure this method runs on the main thread
+        precondition(Thread.isMainThread, "presentationAnchor(for:) must be called on the main thread")
 
-        return Self.resolvePresentationAnchor()
-    }
-
-    private static func resolvePresentationAnchor() -> ASPresentationAnchor {
         #if os(iOS)
         return UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
@@ -366,6 +356,7 @@ extension AuthManager: ASWebAuthenticationPresentationContextProviding {
         #endif
     }
 }
+
 #endif
 
 
