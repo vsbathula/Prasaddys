@@ -107,7 +107,10 @@ public class AuthManager: NSObject {
             self.session?.presentationContextProvider = self
             
             DispatchQueue.main.async {
-                self.session?.start()
+//                self.session?.start()
+                print("Starting ASWebAuthenticationSession with URL: \(url)")
+                let started = self.session?.start()
+                print("Session started: \(started ?? false)")
             }
         }
         
