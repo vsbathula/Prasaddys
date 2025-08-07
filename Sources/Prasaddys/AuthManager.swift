@@ -220,7 +220,7 @@ public class AuthManager: NSObject {
     
     
     //    // MARK: - Presentation Anchor (iOS & macOS)
-    //    
+    //
     //#if !os(tvOS)
     //    @MainActor
     //    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
@@ -362,22 +362,27 @@ public class AuthManager: NSObject {
 // MARK: - ASWebAuthenticationPresentationContextProviding
 #if !os(tvOS)
 extension AuthManager: ASWebAuthenticationPresentationContextProviding {
-    @MainActor
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-#if os(iOS)
+        // ✅ Enforce main thread at runtime
+        if !Thread.isMainThread {
+            assertionFailure("presentationAnchor(for:) must be called on the main thread")
+        }
+
+        #if os(iOS)
         return UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-#elseif os(macOS)
+        #elseif os(macOS)
         print("Available windows: \(NSApplication.shared.windows)")
         return NSApplication.shared.windows.first ?? ASPresentationAnchor()
-#else
+        #else
         return ASPresentationAnchor()
-#endif
+        #endif
     }
 }
 #endif
+
 
 // MARK: - Supporting Types
 
