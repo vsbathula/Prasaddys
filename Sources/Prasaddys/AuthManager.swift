@@ -129,15 +129,14 @@ public class AuthManager: NSObject {
     /// Starts the Device Authorization Grant flow for tvOS.
     /// This method is only available on tvOS.
 #if os(tvOS)
-    public func startDeviceCodeFlow(email: String) async throws -> (deviceCode: String, userCode: String, verificationUri: String, interval: Int) {
+    public func startDeviceCodeFlow() async throws -> (deviceCode: String, userCode: String, verificationUri: String, interval: Int) {
         var request = URLRequest(url: baseURL.appendingPathComponent("/device_authorize"))
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
         let bodyParams = [
             "client_id": clientId,
-            "scope": "read",
-            "email": email
+            "scope": "read"
         ]
         
         request.httpBody = bodyParams
