@@ -16,7 +16,9 @@ public class AuthManager: NSObject {
     // MARK: - Properties
     private let baseURL: URL
     private let clientId: String
+#if !os(tvOS)
     private let redirectUri: String
+#endif
     private let authPath = "/authorize"
     private let tokenPath = "/token"
     private let redirectScheme = "ramyam-m" // Must match the URL Scheme configured in Xcode
@@ -31,11 +33,19 @@ public class AuthManager: NSObject {
     ///   - baseURL: The base URL of the OAuth 2.0 authorization server.
     ///   - clientId: The client ID for your application.
     ///   - redirectUri: The redirect URI for the authorization code flow (iOS/macOS).
+#if os(tvOS)
+    // Initializer for tvOS, which does not require a redirectUri
+    public init(baseURL: URL, clientId: String) {
+        self.baseURL = baseURL
+        self.clientId = clientId
+    }
+#else
     public init(baseURL: URL, clientId: String, redirectUri: String) {
         self.baseURL = baseURL
         self.clientId = clientId
         self.redirectUri = redirectUri
     }
+#endif
     
     // MARK: - Public API
     
@@ -197,6 +207,7 @@ public class AuthManager: NSObject {
 #endif
     
     // MARK: - Internal Helper Methods
+#if !os(tvOS)
     @MainActor
     private func exchangeCodeForToken(authorizationCode: String) async throws {
         let request = createTokenRequest(with: [
@@ -214,6 +225,7 @@ public class AuthManager: NSObject {
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
         try saveTokens(tokenResponse)
     }
+#endif
     
     // MARK: - Token Management & Retrieval
     
@@ -340,17 +352,17 @@ extension AuthManager: ASWebAuthenticationPresentationContextProviding {
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         // ✅ Ensure this method runs on the main thread
         precondition(Thread.isMainThread, "presentationAnchor(for:) must be called on the main thread")
-
-        #if os(iOS)
+        
+#if os(iOS)
         return UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-        #elseif os(macOS)
+#elseif os(macOS)
         return NSApplication.shared.windows.first ?? NSApp.mainWindow ?? ASPresentationAnchor()
-        #else
+#else
         return ASPresentationAnchor()
-        #endif
+#endif
     }
 }
 
