@@ -163,7 +163,6 @@ public class AuthManager: NSObject {
             deviceCode: deviceCodeResponse.device_code,
             userCode: deviceCodeResponse.user_code,
             verificationUri: deviceCodeResponse.verification_uri,
-            expiresIn: deviceCodeResponse.expires_in,
             interval: deviceCodeResponse.interval
         )
     }
@@ -384,7 +383,6 @@ public struct DeviceCodeResponse: Codable {
     public let device_code: String
     public let user_code: String
     public let verification_uri: String
-    public let expires_in: Int
     public let interval: Int
 }
 #endif
