@@ -7,7 +7,7 @@ public class APIClient: @unchecked Sendable {
     private let authorizationToken: String?
     private let session: Session
     
-    init(baseURL: URL, authorizationToken: String? = nil, session: Session = .default) {
+    public init(baseURL: URL, authorizationToken: String? = nil, session: Session = .default) {
         self.baseURL = baseURL
         self.authorizationToken = authorizationToken
         self.session = session
