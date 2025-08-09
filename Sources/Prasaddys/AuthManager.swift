@@ -170,7 +170,7 @@ public class AuthManager: NSObject {
     
     /// Polls the token endpoint until the user authorizes the device.
     /// This method is only available on tvOS.
-    public func pollForDeviceCodeToken(deviceCode: String, interval: Int) async throws {
+    public func pollForDeviceCodeToken(deviceCode: String, interval: Int, deviceId: String) async throws {
         let pollInterval = UInt64(interval) * 1_000_000_000 // seconds to nanoseconds
 
         while true {
@@ -179,7 +179,8 @@ public class AuthManager: NSObject {
             let request = createTokenRequest(with: [
                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                 "device_code": deviceCode,   // <-- fixed here
-                "client_id": clientId
+                "client_id": clientId,
+                "deviceId": deviceId
             ])
 
             do {
