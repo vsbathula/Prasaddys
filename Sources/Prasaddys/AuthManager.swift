@@ -180,7 +180,7 @@ public class AuthManager: NSObject {
                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                 "device_code": deviceCode,   // <-- fixed here
                 "client_id": clientId,
-                "deviceId": deviceId
+                "deviceid": deviceId
             ])
 
             do {
