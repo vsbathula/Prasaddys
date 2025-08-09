@@ -17,7 +17,7 @@ public struct PageInfo: Codable, Sendable {
 }
 
 // MARK: - YouTubeSearchResult
-public struct YouTubeSearchResult: Codable, Identifiable, Sendable {
+public struct YouTubeSearchResult: Codable, Identifiable, Sendable, Equatable {
     public let videoInfo: VideoID // Renamed from `id`
     public let snippet: Snippet
     
@@ -30,13 +30,13 @@ public struct YouTubeSearchResult: Codable, Identifiable, Sendable {
 }
 
 // MARK: - VideoID
-public struct VideoID: Codable, Sendable {
+public struct VideoID: Codable, Sendable, Equatable {
     public let kind: String
     public let videoId: String
 }
 
 // MARK: - Snippet
-public struct Snippet: Codable, Sendable {
+public struct Snippet: Codable, Sendable, Equatable {
     public let publishedAt: String?
     public let channelId: String?
     public let title: String
@@ -48,14 +48,14 @@ public struct Snippet: Codable, Sendable {
 }
 
 // MARK: - Thumbnails
-public struct Thumbnails: Codable, Sendable {
+public struct Thumbnails: Codable, Sendable, Equatable {
     public let `default`: ThumbnailDetail?
     public let medium: ThumbnailDetail?
     public let high: ThumbnailDetail?
 }
 
 // MARK: - ThumbnailDetail
-public struct ThumbnailDetail: Codable, Sendable {
+public struct ThumbnailDetail: Codable, Sendable, Equatable {
     public let url: String
     public let width: Int?
     public let height: Int?
