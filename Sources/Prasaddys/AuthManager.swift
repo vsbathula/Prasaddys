@@ -177,7 +177,7 @@ public class AuthManager: NSObject {
             
             let request = createTokenRequest(with: [
                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-                "device_code": deviceCode,
+                "deviceCode": deviceCode,
                 "client_id": clientId
             ])
             
