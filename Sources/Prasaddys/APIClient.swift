@@ -83,6 +83,49 @@ public class APIClient: @unchecked Sendable {
         }
     }
     
+    public func searchYouTube(query: String, pageToken: String? = nil) async throws -> YouTubeSearchResultsModel {
+        guard let youTubeAPIKey = AppConfigUtil.getYtApiKey(),
+              let youTubeBaseUrl = AppConfigUtil.getYtApiUrl() else {
+            throw APIError.custom("YouTube API key or URL is missing.")
+        }
+
+        // Build the full URL with query parameters
+        guard var urlComponents = URLComponents(string: youTubeBaseUrl) else {
+            throw APIError.invalidURL
+        }
+
+        var queryItems = [
+            URLQueryItem(name: "part", value: "snippet"),
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "type", value: "video"),
+            URLQueryItem(name: "key", value: youTubeAPIKey)
+        ]
+        
+        if let pageToken = pageToken {
+            queryItems.append(URLQueryItem(name: "pageToken", value: pageToken))
+        }
+
+        urlComponents.queryItems = queryItems
+        
+        guard let url = urlComponents.url else {
+            throw APIError.invalidURL
+        }
+
+        // Perform the request using the complete URL
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .get)
+                .validate()
+                .responseDecodable(of: YouTubeSearchResultsModel.self) { response in
+                    switch response.result {
+                    case .success(let value):
+                        continuation.resume(returning: value)
+                    case .failure(let error):
+                        continuation.resume(throwing: self.mapAlamofireError(error, data: response.data))
+                    }
+                }
+        }
+    }
+    
     public func fetchAlbums(page: Int = 1, pageSize: Int = 20) async throws -> AlbumsResponseModel {
         let url = baseURL.appendingPathComponent("albums")
         let parameters: Parameters = [
@@ -144,38 +187,38 @@ public class APIClient: @unchecked Sendable {
     }
     
     public func searchAlbums(query: String, page: Int = 1, pageSize: Int = 20) async throws -> AlbumsResponseModel {
-            let url = baseURL.appendingPathComponent("/albums/search")
-            
-            let parameters: Parameters = [
-                "q": query,
-                "page": page,
-                "limit": pageSize
-            ]
-            
-            var headers: HTTPHeaders = ["Accept": "application/json"]
-            if let token = authorizationToken {
-                headers.add(name: "Authorization", value: "Bearer \(token)")
-            }
-            
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-            
-            let response = await session
-                .request(url, method: .get, parameters: parameters, headers: headers)
-                .validate(statusCode: 200..<300)
-                .serializingDecodable(AlbumsResponseModel.self, decoder: decoder)
-                .response
-            
-            if let error = response.error {
-                throw error
-            }
-            
-            guard let albumsResponse = response.value else {
-                throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in search albums response"])
-            }
-            
-            return albumsResponse
+        let url = baseURL.appendingPathComponent("/albums/search")
+        
+        let parameters: Parameters = [
+            "q": query,
+            "page": page,
+            "limit": pageSize
+        ]
+        
+        var headers: HTTPHeaders = ["Accept": "application/json"]
+        if let token = authorizationToken {
+            headers.add(name: "Authorization", value: "Bearer \(token)")
         }
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        
+        let response = await session
+            .request(url, method: .get, parameters: parameters, headers: headers)
+            .validate(statusCode: 200..<300)
+            .serializingDecodable(AlbumsResponseModel.self, decoder: decoder)
+            .response
+        
+        if let error = response.error {
+            throw error
+        }
+        
+        guard let albumsResponse = response.value else {
+            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in search albums response"])
+        }
+        
+        return albumsResponse
+    }
     
 }
 
