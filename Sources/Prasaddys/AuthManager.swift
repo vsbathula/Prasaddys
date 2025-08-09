@@ -252,7 +252,7 @@ public class AuthManager: NSObject {
         ]
         
         if let accessToken = KeyChainUtil.getAccessToken(), !accessToken.isEmpty {
-            headers.add(name: "Authorization", value: "Bearer \(accessToken)")
+            headers.add(name: "Authorization", value: accessToken)
         } else {
             print("⚠️ Access token not found — request might fail.")
         }
