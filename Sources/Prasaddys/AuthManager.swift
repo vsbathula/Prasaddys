@@ -172,16 +172,16 @@ public class AuthManager: NSObject {
     /// This method is only available on tvOS.
     public func pollForDeviceCodeToken(deviceCode: String, interval: Int) async throws {
         let pollInterval = UInt64(interval) * 1_000_000_000 // seconds to nanoseconds
-        
+
         while true {
             try await Task.sleep(nanoseconds: pollInterval)
-            
+
             let request = createTokenRequest(with: [
                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-                "deviceCode": deviceCode,
+                "device_code": deviceCode,   // <-- fixed here
                 "client_id": clientId
             ])
-            
+
             do {
                 let (data, response) = try await URLSession.shared.data(for: request)
                 if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
@@ -190,15 +190,21 @@ public class AuthManager: NSObject {
                     return
                 } else {
                     let tokenErrorResponse = try? JSONDecoder().decode(TokenErrorResponse.self, from: data)
-                    if tokenErrorResponse?.error == "authorization_pending" || tokenErrorResponse?.error == "slow_down" {
-                        continue
-                    } else if let tokenErrorResponse = tokenErrorResponse {
-                        throw AuthError.tokenRequestFailed(tokenErrorResponse.error_description ?? "Unknown error during polling")
+                    if let errorResp = tokenErrorResponse {
+                        print("Polling error: \(errorResp.error) - \(errorResp.error_description ?? "")")
+                        if errorResp.error == "authorization_pending" || errorResp.error == "slow_down" {
+                            continue
+                        } else {
+                            throw AuthError.tokenRequestFailed(errorResp.error_description ?? "Unknown error during polling")
+                        }
                     } else {
-                        throw AuthError.tokenRequestFailed(String(data: data, encoding: .utf8) ?? "Unknown error during polling")
+                        let raw = String(data: data, encoding: .utf8) ?? "Unknown error data"
+                        print("Polling unexpected error data: \(raw)")
+                        throw AuthError.tokenRequestFailed(raw)
                     }
                 }
             } catch let urlError as URLError where urlError.code == .timedOut {
+                print("Polling timeout, retrying...")
                 continue // Retry on timeout
             } catch {
                 throw error
