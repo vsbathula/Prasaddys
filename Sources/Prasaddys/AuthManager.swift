@@ -7,6 +7,7 @@ import AppKit
 import Foundation
 import AuthenticationServices
 import CommonCrypto
+import Alamofire
 
 // MARK: - AuthManager Public Interface
 
@@ -172,22 +173,28 @@ public class AuthManager: NSObject {
     /// This method is only available on tvOS.
     public func pollForDeviceCodeToken(deviceCode: String, interval: Int, deviceId: String) async throws {
         let pollInterval = UInt64(interval) * 1_000_000_000 // seconds to nanoseconds
-
+        
         while true {
             try await Task.sleep(nanoseconds: pollInterval)
-
+            
             let request = createTokenRequest(with: [
                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                 "device_code": deviceCode,   // <-- fixed here
                 "client_id": clientId,
                 "deviceid": deviceId
             ])
-
+            
             do {
                 let (data, response) = try await URLSession.shared.data(for: request)
                 if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                     let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
                     try saveTokens(tokenResponse)
+                    let success = await postDeviceDetails()
+                    if success {
+                        print("📱 Device details successfully posted")
+                    } else {
+                        print("🚫 Failed to post device details")
+                    }
                     return
                 } else {
                     let tokenErrorResponse = try? JSONDecoder().decode(TokenErrorResponse.self, from: data)
@@ -213,6 +220,67 @@ public class AuthManager: NSObject {
         }
     }
 #endif
+    
+    public func postDeviceDetails() async -> Bool {
+        guard
+            let userId = KeyChainUtil.getUserId(), !userId.isEmpty,
+            let deviceUuid = KeyChainUtil.getDeviceUuid(), !deviceUuid.isEmpty,
+            let deviceModelStr = KeyChainUtil.getOsModel(), !deviceModelStr.isEmpty,
+            let deviceVersionStr = KeyChainUtil.getOsVersion(), !deviceVersionStr.isEmpty
+        else {
+            print("❌ Missing required device or user data.")
+            return false
+        }
+        
+        let userDevicePostUrl = "/user/\(userId)/devices/device"
+        let apiBaseURL = AppConfigUtil.getApiUrl()
+        let usersBaseURL = apiBaseURL.replacingOccurrences(of: "/api/media", with: "/api/users")
+        
+        guard let url = URL(string: "\(usersBaseURL)\(userDevicePostUrl)") else {
+            print("❌ Invalid device POST URL: \(usersBaseURL)\(userDevicePostUrl)")
+            return false
+        }
+        
+        let payload: [String: String] = [
+            "deviceId": deviceUuid,
+            "deviceType": deviceModelStr,
+            "deviceOsVersion": deviceVersionStr
+        ]
+        
+        var headers: HTTPHeaders = [
+            "Content-Type": "application/json"
+        ]
+        
+        if let accessToken = KeyChainUtil.getAccessToken(), !accessToken.isEmpty {
+            headers.add(name: "Authorization", value: "Bearer \(accessToken)")
+        } else {
+            print("⚠️ Access token not found — request might fail.")
+        }
+        
+        do {
+            let response = try await AF.request(
+                url,
+                method: .post,
+                parameters: payload,
+                encoding: JSONEncoding.default,
+                headers: headers
+            )
+                .validate(statusCode: 200..<300)
+                .serializingString() // or .serializingDecodable(SomeModel.self) if expecting a model
+                .value
+            
+            print("✅ Device POST response: \(response)")
+            return true
+            
+        } catch {
+            if let afError = error as? AFError {
+                print("❌ Alamofire error: \(afError.localizedDescription)")
+            } else {
+                print("❌ Unexpected error: \(error.localizedDescription)")
+            }
+            return false
+        }
+    }
     
     // MARK: - Internal Helper Methods
 #if !os(tvOS)
@@ -292,7 +360,8 @@ public class AuthManager: NSObject {
     private func saveTokens(_ tokenResponse: TokenResponse) throws {
         guard let accessData = tokenResponse.access_token.data(using: .utf8),
               let refreshData = tokenResponse.refresh_token.data(using: .utf8),
-              let userIdData = tokenResponse.user_id.data(using: .utf8) else {
+              let userIdData = tokenResponse.user_id.data(using: .utf8),
+        let userEmailData = tokenResponse.user_email.data(using: .utf8) else {
             throw AuthError.missingTokenData
         }
         print("[Access Token] \(String(describing: tokenResponse.access_token.data(using: .utf8)))")
@@ -310,10 +379,16 @@ public class AuthManager: NSObject {
             saveSuccess = false
         }
         
-        if !KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) {
+        if !KeychainHelper.shared.save(userIdData, service: AppConstants.Keychain.userIdService, account: AppConstants.Keychain.userIdAccount) {
             print("❌ Failed to save user ID.")
             saveSuccess = false
         }
+        
+        if !KeychainHelper.shared.save(userEmailData, service: AppConstants.Keychain.userEmailService, account: AppConstants.Keychain.userEmailAccount) {
+            print("❌ Failed to save user ID.")
+            saveSuccess = false
+        }
+        
         
         if saveSuccess {
             print("✅ [AuthManager] All tokens and user ID saved successfully.")
