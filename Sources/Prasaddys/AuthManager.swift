@@ -54,7 +54,7 @@ public class AuthManager: NSObject {
     /// - Parameter email: The user's email address to pre-fill the login form.
     /// - Returns: The authorization code received from the server.
     @MainActor
-    public func startAuthorization(email: String) async throws {
+    public func startAuthorization(email: String, deviceId: String) async throws {
 #if os(tvOS)
         throw AuthError.unsupportedPlatform
 #else
@@ -76,7 +76,8 @@ public class AuthManager: NSObject {
             URLQueryItem(name: "code_challenge_method", value: "S256"),
             URLQueryItem(name: "scope", value: "read"),
             URLQueryItem(name: "state", value: self.state),
-            URLQueryItem(name: "email", value: email)
+            URLQueryItem(name: "email", value: email),
+            URLQueryItem(name: "device_id", value: deviceId)
         ]
         
         guard let url = components.url else {
