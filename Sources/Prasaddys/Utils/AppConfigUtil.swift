@@ -30,6 +30,14 @@ public class AppConfigUtil {
         return getOptionalInfoPlistValue(forKey: "YT_API_KEY")
     }
     
+    static func getPlexBaseUrl() -> String? {
+        return getOptionalInfoPlistValue(forKey: "PLEX_URL")
+    }
+
+    static func getPlexToken() -> String? {
+        return getOptionalInfoPlistValue(forKey: "PLEX_TOKEN")
+    }
+    
     // MARK: - Private Helper Functions
     
     /// Fetches a critical Info.plist value. Will cause a fatalError if the key is missing or not a String.
