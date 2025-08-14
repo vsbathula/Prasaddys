@@ -195,7 +195,7 @@ public class APIClient: @unchecked Sendable {
         }
         
         guard let dataResponse = response.value else {
-            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in albums response"])
+            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in response"])
         }
         
         return dataResponse
@@ -251,7 +251,7 @@ public class APIClient: @unchecked Sendable {
         }
         
         guard let albumDetail = response.value else {
-            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in album detail response"])
+            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in movie detail response"])
         }
         
         return albumDetail
