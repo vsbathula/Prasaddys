@@ -30,11 +30,11 @@ public class AppConfigUtil {
         return getOptionalInfoPlistValue(forKey: "YT_API_KEY")
     }
     
-    static func getPlexBaseUrl() -> String? {
+    public static func getPlexBaseUrl() -> String? {
         return getOptionalInfoPlistValue(forKey: "PLEX_URL")
     }
 
-    static func getPlexToken() -> String? {
+    public static func getPlexToken() -> String? {
         return getOptionalInfoPlistValue(forKey: "PLEX_TOKEN")
     }
     
