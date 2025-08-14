@@ -6,16 +6,12 @@ public struct PaginationMeta: Codable, Sendable {
     public let totalPages: Int
     public let totalRecords: Int
     public let limit: Int
-    public let next: String?
-    public let previous: String?
 
-    public init(currentPage: Int, totalPages: Int, totalRecords: Int, limit: Int, next: String?, previous: String?) {
+    public init(currentPage: Int, totalPages: Int, totalRecords: Int, limit: Int) {
         self.currentPage = currentPage
         self.totalPages = totalPages
         self.totalRecords = totalRecords
         self.limit = limit
-        self.next = next
-        self.previous = previous
     }
 }
 
