@@ -38,7 +38,7 @@ public struct Track: Codable, Identifiable, Equatable, Sendable {
 // MARK: - AlbumsResponseModel
 public struct AlbumsResponseModel: Decodable, Sendable {
     public  let albums: [Album]
-    public  let pagination: Pagination
+    public  let pagination: PaginationMeta
 }
 
 // MARK: - Album

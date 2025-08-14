@@ -7,8 +7,8 @@ public class APIClient: @unchecked Sendable {
     private let authorizationToken: String?
     private let session: Session
     
-    public init(baseURL: URL, authorizationToken: String? = nil, session: Session = .default) {
-        self.baseURL = baseURL
+    public init(baseURL: URL? = nil, authorizationToken: String? = nil, session: Session = .default) {
+        self.baseURL = baseURL!
         self.authorizationToken = authorizationToken
         self.session = session
     }
@@ -126,8 +126,51 @@ public class APIClient: @unchecked Sendable {
         }
     }
     
-    public func fetchAlbums(page: Int = 1, pageSize: Int = 20) async throws -> AlbumsResponseModel {
-        let url = baseURL.appendingPathComponent("albums")
+    public func search<T: Decodable & Sendable>(
+        endpoint: String,
+        query: String,
+        page: Int = 1,
+        pageSize: Int = 20
+    ) async throws -> T {
+        let url = baseURL.appendingPathComponent(endpoint)
+        
+        let parameters: Parameters = [
+            "q": query,
+            "page": page,
+            "limit": pageSize
+        ]
+        
+        var headers: HTTPHeaders = ["Accept": "application/json"]
+        if let token = authorizationToken {
+            headers.add(name: "Authorization", value: "Bearer \(token)")
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        
+        let response = await session
+            .request(url, method: .get, parameters: parameters, headers: headers)
+            .validate(statusCode: 200..<300)
+            .serializingDecodable(T.self, decoder: decoder) // ⬅️ The key change: using T.self
+            .response
+            
+        if let error = response.error {
+            throw error
+        }
+        
+        guard let searchResponse = response.value else {
+            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in search response"])
+        }
+        
+        return searchResponse
+    }
+    
+    public func fetchData<T: Decodable & Sendable>(
+        endpoint: String,
+        page: Int = 1,
+        pageSize: Int = 20
+    ) async throws -> T {
+        let url = baseURL.appendingPathComponent("movies")
         let parameters: Parameters = [
             "page": page,
             "limit": pageSize
@@ -144,18 +187,18 @@ public class APIClient: @unchecked Sendable {
         let response = await session
             .request(url, method: .get, parameters: parameters, headers: headers)
             .validate(statusCode: 200..<300)
-            .serializingDecodable(AlbumsResponseModel.self, decoder: decoder)
+            .serializingDecodable(T.self, decoder: decoder)
             .response
         
         if let error = response.error {
             throw error
         }
         
-        guard let albumsResponse = response.value else {
+        guard let dataResponse = response.value else {
             throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in albums response"])
         }
         
-        return albumsResponse
+        return dataResponse
     }
     
     public func fetchAlbumById(_ albumRatingKey: String) async throws -> AlbumDetailResponse {
@@ -186,14 +229,8 @@ public class APIClient: @unchecked Sendable {
         return albumDetail
     }
     
-    public func searchAlbums(query: String, page: Int = 1, pageSize: Int = 20) async throws -> AlbumsResponseModel {
-        let url = baseURL.appendingPathComponent("/albums/search")
-        
-        let parameters: Parameters = [
-            "q": query,
-            "page": page,
-            "limit": pageSize
-        ]
+    public func fetchMovieById(_ movieRatingKey: String) async throws -> MovieDetailResponse {
+        let url = baseURL.appendingPathComponent("/movies/movie/\(movieRatingKey)")
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
         if let token = authorizationToken {
@@ -204,20 +241,20 @@ public class APIClient: @unchecked Sendable {
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         
         let response = await session
-            .request(url, method: .get, parameters: parameters, headers: headers)
+            .request(url, method: .get, headers: headers)
             .validate(statusCode: 200..<300)
-            .serializingDecodable(AlbumsResponseModel.self, decoder: decoder)
+            .serializingDecodable(MovieDetailResponse.self, decoder: decoder)
             .response
         
         if let error = response.error {
             throw error
         }
         
-        guard let albumsResponse = response.value else {
-            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in search albums response"])
+        guard let albumDetail = response.value else {
+            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in album detail response"])
         }
         
-        return albumsResponse
+        return albumDetail
     }
     
 }

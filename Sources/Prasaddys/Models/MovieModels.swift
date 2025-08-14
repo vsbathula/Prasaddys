@@ -1,13 +1,13 @@
 import Foundation
 
 // MARK: - MoviesResponseModel
-public struct MoviesResponseModel: Decodable {
+public struct MoviesResponseModel: Decodable, Sendable {
     public let movies: [Movie]
-    public let pagination: Pagination
+    public let pagination: PaginationMeta
 }
 
 // MARK: - Movie
-public struct Movie: Decodable, Identifiable, Hashable {
+public struct Movie: Decodable, Identifiable, Hashable, Sendable {
     public var id: String { movieRatingKey }
     public let movieRatingKey: String
     public let movieTitle: String
@@ -24,7 +24,7 @@ public struct Movie: Decodable, Identifiable, Hashable {
 //}
 
 // MARK: - MovieDetailResponse
-public struct MovieDetailResponse: Codable {
+public struct MovieDetailResponse: Codable, Sendable {
     public let movieRatingKey: String
     public let movieStudio: String?
     public let movieTitle: String
@@ -49,7 +49,7 @@ public struct MovieDetailResponse: Codable {
 }
 
 // MARK: - Media
-public struct Media: Codable {
+public struct Media: Codable, Sendable {
     public let mediaId: Int
     public let mediaDuration: Int
     public let mediaBitRate: Int
@@ -67,7 +67,7 @@ public struct Media: Codable {
 }
 
 // MARK: - Part
-public struct Part: Codable {
+public struct Part: Codable, Sendable {
     public let partId: Int
     public let partFile: String
     public let partKey: String
@@ -77,7 +77,7 @@ public struct Part: Codable {
 }
 
 // MARK: - Stream
-public struct Stream: Codable {
+public struct Stream: Codable, Sendable {
     public let streamId: Int
     public let streamType: Int?
     public let streamCodec: String
@@ -89,40 +89,40 @@ public struct Stream: Codable {
 }
 
 // MARK: - Genre
-public struct Genre: Codable {
+public struct Genre: Codable, Sendable {
     public let genreId: Int
     public let genre: String
 }
 
 // MARK: - Country
-public struct Country: Codable {
+public struct Country: Codable, Sendable {
     public let countryId: Int
     public let country: String
 }
 
 // MARK: - Director
-public struct Director: Codable {
+public struct Director: Codable, Sendable {
     public let directorId: Int
     public let directorName: String
     public let directorThumb: String?
 }
 
 // MARK: - Writer
-public struct Writer: Codable {
+public struct Writer: Codable, Sendable {
     public let writerId: Int
     public let writerName: String
     public let writerThumb: String?
 }
 
 // MARK: - Producer
-public struct Producer: Codable {
+public struct Producer: Codable, Sendable {
     public let producerId: Int
     public let producerName: String
     public let producerThumb: String?
 }
 
 // MARK: - Actor
-public struct Actor: Codable {
+public struct Actor: Codable, Sendable {
     public let actorId: Int
     public let actorName: String
     public let actorRole: String
@@ -130,7 +130,7 @@ public struct Actor: Codable {
 }
 
 // MARK: - Rating
-public struct Rating: Codable {
+public struct Rating: Codable, Sendable {
     public let ratingImage: String
     public let ratingValue: Int
     public let ratingType: String
