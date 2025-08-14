@@ -142,7 +142,7 @@ public class APIClient: @unchecked Sendable {
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
         if let token = authorizationToken {
-            headers.add(name: "Authorization", value: "Bearer \(token)")
+            headers.add(name: "Authorization", value: token)
         }
         
         let decoder = JSONDecoder()
@@ -178,7 +178,7 @@ public class APIClient: @unchecked Sendable {
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
         if let token = authorizationToken {
-            headers.add(name: "Authorization", value: "Bearer \(token)")
+            headers.add(name: "Authorization", value: token)
         }
         
         let decoder = JSONDecoder()
@@ -206,7 +206,7 @@ public class APIClient: @unchecked Sendable {
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
         if let token = authorizationToken {
-            headers.add(name: "Authorization", value: "Bearer \(token)")
+            headers.add(name: "Authorization", value: token)
         }
         
         let decoder = JSONDecoder()
@@ -234,7 +234,7 @@ public class APIClient: @unchecked Sendable {
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
         if let token = authorizationToken {
-            headers.add(name: "Authorization", value: "Bearer \(token)")
+            headers.add(name: "Authorization", value: token)
         }
         
         let decoder = JSONDecoder()
