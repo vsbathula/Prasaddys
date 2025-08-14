@@ -132,7 +132,7 @@ public class APIClient: @unchecked Sendable {
         page: Int = 1,
         pageSize: Int = 20
     ) async throws -> T {
-        let url = baseURL.appendingPathComponent("\(endpoint)?page=\(page)&limit=\(pageSize)")
+        let url = baseURL.appendingPathComponent(endpoint)
         
         let parameters: Parameters = [
             "q": query,
@@ -170,7 +170,7 @@ public class APIClient: @unchecked Sendable {
         page: Int = 1,
         pageSize: Int = 20
     ) async throws -> T {
-        let url = baseURL.appendingPathComponent("\(endpoint)?page=\(page)&limit=\(pageSize)")
+        let url = baseURL.appendingPathComponent(endpoint)
         let parameters: Parameters = [
             "page": page,
             "limit": pageSize
