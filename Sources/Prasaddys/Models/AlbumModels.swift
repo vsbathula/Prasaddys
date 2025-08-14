@@ -42,7 +42,7 @@ public struct AlbumsResponseModel: Decodable, Sendable {
 }
 
 // MARK: - Album
-public struct Album: Decodable, Identifiable, Hashable, Equatable, Sendable {
+public struct Album: Encodable, Decodable, Identifiable, Hashable, Equatable, Sendable {
     public var id: String { albumRatingKey }
     public  let albumArtist: String
     public  let albumTitle: String

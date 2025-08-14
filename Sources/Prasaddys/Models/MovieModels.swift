@@ -7,7 +7,7 @@ public struct MoviesResponseModel: Decodable, Sendable {
 }
 
 // MARK: - Movie
-public struct Movie: Decodable, Identifiable, Hashable, Sendable {
+public struct Movie: Encodable, Decodable, Identifiable, Hashable, Sendable {
     public var id: String { movieRatingKey }
     public let movieRatingKey: String
     public let movieTitle: String
