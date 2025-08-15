@@ -3,9 +3,9 @@ import SwiftUI
 
 @MainActor
 public class PaginatedViewModel<T: Decodable & Identifiable>: ObservableObject {
-    @Published var items: [T] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
+    @Published public var items: [T] = []
+    @Published public var isLoading = false
+    @Published public var errorMessage: String?
 
     private var currentPage = 1
     private var canLoadMorePages = true
