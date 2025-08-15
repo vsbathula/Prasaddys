@@ -197,7 +197,6 @@ public class APIClient: @unchecked Sendable {
         guard let dataResponse = response.value else {
             throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in response"])
         }
-        print("Decoded response: \(dataResponse)")
         return dataResponse
     }
     
