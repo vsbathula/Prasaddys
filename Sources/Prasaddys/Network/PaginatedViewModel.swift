@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-class PaginatedViewModel<T: Decodable & Identifiable>: ObservableObject {
+public class PaginatedViewModel<T: Decodable & Identifiable>: ObservableObject {
     @Published var items: [T] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -15,7 +15,7 @@ class PaginatedViewModel<T: Decodable & Identifiable>: ObservableObject {
 
     private let cacheDirectory: URL
 
-    init(baseUrl: String, extract: @escaping (Data) throws -> [T]) {
+    public init(baseUrl: String, extract: @escaping (Data) throws -> [T]) {
         self.baseUrl = baseUrl
         self.extract = extract
 
@@ -33,19 +33,19 @@ class PaginatedViewModel<T: Decodable & Identifiable>: ObservableObject {
         Task {
             await loadMore()
         }
-        clearCache()
+        refresh()
     }
 
-    func loadMore() async {
+    public func loadMore() async {
         await loadData(url: createURL())
     }
 
-    func search(query: String) async {
+    public func search(query: String) async {
         reset()
         await loadData(url: createSearchURL(query: query))
     }
     
-    func loadAllPages(completion: @escaping () -> Void) {
+    public func loadAllPages(completion: @escaping () -> Void) {
         Task {
             if items.isEmpty {
                 await loadMore()
@@ -136,25 +136,25 @@ class PaginatedViewModel<T: Decodable & Identifiable>: ObservableObject {
         try? data.write(to: cacheFileURL)
     }
 
-    func refresh() {
+    private func refresh() {
         try? FileManager.default.removeItem(at: cacheDirectory)
         try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
         reset()
     }
 
-    func clearCache() {
+    private func clearCache() {
         let fileManager = FileManager.default
         if fileManager.fileExists(atPath: cacheDirectory.path) {
             do {
                 try fileManager.removeItem(at: cacheDirectory)  // Clear the entire cache
-                print("Cache cleared successfully.")
+                PrintUtil.printDebug(data: "Cache cleared successfully.")
             } catch {
-                print("Error clearing cache: \(error.localizedDescription)")
+                PrintUtil.printDebug(data: "Error clearing cache: \(error.localizedDescription)")
             }
         }
     }
 
-    func reset() {
+    public func reset() {
         items = []
         currentPage = 1
         canLoadMorePages = true
