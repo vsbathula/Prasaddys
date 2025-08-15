@@ -17,8 +17,8 @@ public struct PaginationMeta: Codable, Sendable {
 
 // MARK: - Generic Paginated Envelope
 public struct PaginatedEnvelope<T: Codable & Sendable>: Codable, Sendable {
-    public let items: [T]
-    public let pagination: PaginationMeta
+    public var items: [T]
+    public var pagination: PaginationMeta
 
     private struct DynamicCodingKeys: CodingKey {
         public var stringValue: String
