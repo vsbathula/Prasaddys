@@ -4,7 +4,6 @@ import Foundation
 
 public  struct TrackResponseModel: Codable, Sendable {
     public let tracks: [Track]
-    public let tracksRatingKeyList: [String]
     public let pagination: PaginationModel
 }
 
