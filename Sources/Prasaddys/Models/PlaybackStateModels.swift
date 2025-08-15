@@ -3,7 +3,7 @@ import Foundation
 // MARK: - PlaybackStateResponse
 public struct PlaybackStateResponse: Codable {
     public let playbackState: PlaybackState
-    public let pagination: Pagination
+    public let pagination: PaginationModel
 }
 
 // MARK: - PlaybackState

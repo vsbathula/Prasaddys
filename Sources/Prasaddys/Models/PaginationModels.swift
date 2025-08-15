@@ -1,5 +1,13 @@
 import Foundation
 
+public  struct PaginationModel: Codable, Sendable {
+    public  let currentPage: Int
+    public  let totalPages: Int
+    public  let totalRecords: Int
+    public  let limit: Int
+}
+
+
 // MARK: - Pagination Metadata
 public struct PaginationMeta: Codable, Sendable {
     public var currentPage: Int

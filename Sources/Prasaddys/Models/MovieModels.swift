@@ -15,14 +15,6 @@ public struct Movie: Encodable, Decodable, Identifiable, Hashable, Sendable {
     public let movieThumbnail: String?
 }
 
-// MARK: - MoviesPagination
-//struct MoviesPagination: Codable {
-//    public let currentPage: Int
-//    public let totalPages: Int
-//    public let totalRecords: Int
-//    public let limit: Int
-//}
-
 // MARK: - MovieDetailResponse
 public struct MovieDetailResponse: Codable, Sendable {
     public let movieRatingKey: String

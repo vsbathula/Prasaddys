@@ -18,10 +18,10 @@ public struct PageInfo: Codable, Sendable {
 
 // MARK: - YouTubeSearchResult
 public struct YouTubeSearchResult: Codable, Identifiable, Sendable, Equatable {
-    public let videoInfo: VideoID // Renamed from `id`
+    public let videoInfo: VideoID
     public let snippet: Snippet
     
-    public var id: String { videoInfo.videoId } // Now `id` conforms to Identifiable
+    public var id: String { videoInfo.videoId }
     
     private enum CodingKeys: String, CodingKey {
         case videoInfo = "id"
