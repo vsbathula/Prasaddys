@@ -3,8 +3,9 @@ import Foundation
 // MARK: - TrackResponseModel
 
 public  struct TrackResponseModel: Codable, Sendable {
-    public  let tracks: [Track]
-    public  let pagination: PaginationModel
+    public let tracks: [Track]
+    public let tracksRatingKeyList: [String]
+    public let pagination: PaginationModel
 }
 
 // MARK: - Track
