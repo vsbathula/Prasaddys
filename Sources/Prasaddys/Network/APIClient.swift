@@ -88,12 +88,12 @@ public class APIClient: @unchecked Sendable {
               let youTubeBaseUrl = AppConfigUtil.getYtApiUrl() else {
             throw APIError.custom("YouTube API key or URL is missing.")
         }
-
+        
         // Build the full URL with query parameters
         guard var urlComponents = URLComponents(string: youTubeBaseUrl) else {
             throw APIError.invalidURL
         }
-
+        
         var queryItems = [
             URLQueryItem(name: "part", value: "snippet"),
             URLQueryItem(name: "q", value: query),
@@ -104,13 +104,13 @@ public class APIClient: @unchecked Sendable {
         if let pageToken = pageToken {
             queryItems.append(URLQueryItem(name: "pageToken", value: pageToken))
         }
-
+        
         urlComponents.queryItems = queryItems
         
         guard let url = urlComponents.url else {
             throw APIError.invalidURL
         }
-
+        
         // Perform the request using the complete URL
         return try await withCheckedThrowingContinuation { continuation in
             session.request(url, method: .get)
@@ -153,7 +153,7 @@ public class APIClient: @unchecked Sendable {
             .validate(statusCode: 200..<300)
             .serializingDecodable(T.self, decoder: decoder) // ⬅️ The key change: using T.self
             .response
-            
+        
         if let error = response.error {
             throw error
         }
@@ -196,6 +196,11 @@ public class APIClient: @unchecked Sendable {
         
         guard let dataResponse = response.value else {
             throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in response"])
+        }
+        guard let dataResponse = response.value else {
+            let error = NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in response"])
+            print("No data in response: \(error.localizedDescription)")
+            throw error
         }
         return dataResponse
     }
