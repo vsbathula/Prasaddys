@@ -2,10 +2,10 @@ import Foundation
 
 // MARK: - Pagination Metadata
 public struct PaginationMeta: Codable, Sendable {
-    public let currentPage: Int
-    public let totalPages: Int
-    public let totalRecords: Int
-    public let limit: Int
+    public var currentPage: Int
+    public var totalPages: Int
+    public var totalRecords: Int
+    public var limit: Int
 
     public init(currentPage: Int, totalPages: Int, totalRecords: Int, limit: Int) {
         self.currentPage = currentPage
