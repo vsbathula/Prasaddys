@@ -1,4 +1,4 @@
 public struct TrackIdsResponse: Codable, Sendable {
-    let trackIds: [String]
-    let message: String
+    public let trackIds: [String]
+    public let message: String
 }
