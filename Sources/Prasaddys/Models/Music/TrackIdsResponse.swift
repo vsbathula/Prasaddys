@@ -1,8 +1,8 @@
-struct TrackIdItem: Codable, Identifiable {
-    let id: Int
-    let trackRatingKey: String
+public struct TrackIdItem: Codable, Identifiable {
+    public let id: Int
+    public let trackRatingKey: String
 }
 
-struct TrackIdsResponse: Codable {
-    let trackIds: [TrackIdItem]
+public struct TrackIdsResponse: Codable {
+    public let trackIds: [TrackIdItem]
 }
