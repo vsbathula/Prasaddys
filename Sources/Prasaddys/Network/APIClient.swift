@@ -256,6 +256,34 @@ public class APIClient: @unchecked Sendable {
         return albumDetail
     }
     
+    public func fetchTrackById(_ trackRatingKey: String) async throws -> Track {
+        let url = baseURL.appendingPathComponent("/tracks/track/\(trackRatingKey)")
+        
+        var headers: HTTPHeaders = ["Accept": "application/json"]
+        if let token = authorizationToken {
+            headers.add(name: "Authorization", value: token)
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        
+        let response = await session
+            .request(url, method: .get, headers: headers)
+            .validate(statusCode: 200..<300)
+            .serializingDecodable(Track.self, decoder: decoder)
+            .response
+        
+        if let error = response.error {
+            throw error
+        }
+        
+        guard let trackDetail = response.value else {
+            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data in album detail response"])
+        }
+        
+        return trackDetail
+    }
+    
 }
 
 public enum APIError: Error, Sendable {
