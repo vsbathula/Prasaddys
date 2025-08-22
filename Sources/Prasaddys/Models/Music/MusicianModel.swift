@@ -1,16 +1,13 @@
 import Foundation
 
 // MARK: - MusicianModel
-public struct MusicianModel: Decodable, Identifiable {
+public struct MusicianModel: Encodable, Decodable, Identifiable, Sendable {
     public  let id: String
     public  let name: String
 }
 
 // MARK: - MusiciansResponse
-public struct MusiciansResponse: Decodable, Encodable, Identifiable, Sendable {
-    public var id: Int {
-        pagination.currentPage
-    }
-    public  let musicians: [String]
+public struct MusiciansResponse: Decodable, Encodable, Sendable {
+    public  let musicians: [MusicianModel]
     public  let pagination: PaginationModel
 }
