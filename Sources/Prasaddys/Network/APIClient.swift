@@ -325,7 +325,7 @@ public class APIClient: @unchecked Sendable {
         PrintUtil.printDebug(data: "✅ Playback state saved successfully!")
     }
     
-    public func fetchAndApplyPlaybackState() async  throws -> PlaybackStateResponse {
+    public func fetchPlaybackState() async  throws -> PlaybackStateResponse {
         guard let userId = KeyChainUtil.getUserId(), !userId.isEmpty else {
             throw NSError(domain: "APIClient", code: 401, userInfo: [NSLocalizedDescriptionKey: "User ID not found."])
         }
