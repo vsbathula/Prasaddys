@@ -7,7 +7,7 @@ public struct SingerModel: Decodable, Identifiable {
 }
 
 // MARK: - SingersResponse
-public struct SingersResponse: Decodable, Encodable, Identifiable {
+public struct SingersResponse: Decodable, Encodable, Identifiable, Sendable {
     public var id: Int {
         pagination.currentPage
     }
