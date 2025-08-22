@@ -8,7 +8,9 @@ public struct MusicianModel: Decodable, Identifiable {
 
 // MARK: - MusiciansResponse
 public struct MusiciansResponse: Decodable, Encodable, Identifiable {
-    public var id = UUID()
+    public var id: Int {
+        pagination.currentPage
+    }
     public  let musicians: [String]
     public  let pagination: PaginationModel
 }
