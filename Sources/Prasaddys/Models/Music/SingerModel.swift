@@ -7,7 +7,8 @@ public struct SingerModel: Decodable, Identifiable {
 }
 
 // MARK: - SingersResponse
-public struct SingersResponse: Decodable, Encodable {
+public struct SingersResponse: Decodable, Encodable, Identifiable {
+    public var id = UUID()
     public  let singers: [String]
     public  let pagination: PaginationModel
 }
