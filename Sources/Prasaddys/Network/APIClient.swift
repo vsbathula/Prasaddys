@@ -284,6 +284,80 @@ public class APIClient: @unchecked Sendable {
         return trackDetail
     }
     
+    public func savePlaybackState(currentlyPlayingTrack: String, isShuffleEnabled: Bool, shuffledTracksList: [String], originalTracksList: [String]) async throws {
+        let url = baseURL.appendingPathComponent("/user/playback/state/save")
+        
+        var headers: HTTPHeaders = ["Accept": "application/json"]
+        if let token = authorizationToken {
+            headers.add(name: "Authorization", value: token)
+        }
+        
+        guard let userId = KeyChainUtil.getUserId(), !userId.isEmpty else {
+            throw NSError(domain: "APIClient", code: 401, userInfo: [NSLocalizedDescriptionKey: "User ID not found."])
+        }
+        
+        let parameters = PlaybackStatePayload(
+            userId: userId,
+            currentPlayingTrack: currentlyPlayingTrack,
+            playbackPosition: 0.0,
+            isShuffleEnabled: isShuffleEnabled,
+            shuffledTrackContext: shuffledTracksList,
+            originalTrackContext: originalTracksList
+        )
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        
+        let response = await session
+            .request(url, method: .post, parameters: parameters, encoder: JSONParameterEncoder.default, headers: headers)
+            .validate(statusCode: 200..<300)
+            .serializingData()
+            .response
+        
+        if let error = response.error {
+            throw error
+        }
+        
+        guard let playbackState = response.value else {
+            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "Playback state not saved."])
+        }
+        
+        PrintUtil.printDebug(data: "✅ Playback state saved successfully!")
+    }
+    
+    public func fetchAndApplyPlaybackState() async  throws -> PlaybackStateResponse {
+        guard let userId = KeyChainUtil.getUserId(), !userId.isEmpty else {
+            throw NSError(domain: "APIClient", code: 401, userInfo: [NSLocalizedDescriptionKey: "User ID not found."])
+        }
+        
+        let url = baseURL.appendingPathComponent("/user/playback/state/get/\(userId)")
+        
+        var headers: HTTPHeaders = ["Accept": "application/json"]
+        if let token = authorizationToken {
+            headers.add(name: "Authorization", value: token)
+        }
+        
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        
+        let response = await session
+            .request(url, method: .get, headers: headers)
+            .validate(statusCode: 200..<300)
+            .serializingDecodable(PlaybackStateResponse.self, decoder: decoder)
+            .response
+        
+        if let error = response.error {
+            throw error
+        }
+        
+        guard let playBackDetail = response.value else {
+            throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unable to get playback state"])
+        }
+        
+        return playBackDetail
+    }
+    
 }
 
 public enum APIError: Error, Sendable {

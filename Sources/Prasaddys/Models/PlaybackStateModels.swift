@@ -1,19 +1,25 @@
 import Foundation
 
 // MARK: - PlaybackStateResponse
-struct PlaybackStateResponse: Codable {
-    let playbackState: PlaybackState
+public struct PlaybackStateResponse: Codable, Sendable {
+    public let playbackState: PlaybackState
 }
 
 // MARK: - PlaybackState
-struct PlaybackState: Codable {
-    let playbackPosition: Double
-    let isShuffleEnabled: Bool
-    let shuffledTrackContext: [String]?
-    let originalTrackContext: [String]?
-    let currentPlayingTrack: String?
+public struct PlaybackState: Codable, Sendable {
+    public let playbackPosition: Double
+    public let isShuffleEnabled: Bool
+    public let shuffledTrackContext: [String]?
+    public let originalTrackContext: [String]?
+    public let currentPlayingTrack: String?
 }
 
 
-
-
+public struct PlaybackStatePayload: Encodable, Sendable {
+    public let userId: String
+    public let currentPlayingTrack: String
+    public let playbackPosition: Double
+    public let isShuffleEnabled: Bool?
+    public let shuffledTrackContext: [String]?
+    public let originalTrackContext: [String]?
+}
