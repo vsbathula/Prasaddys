@@ -4,7 +4,7 @@ import Foundation
 
 public  struct TrackResponseModel: Codable, Sendable {
     public let tracks: [Track]
-    let trackIds: [TrackId]?
+    public let trackIds: [TrackId]?
     public let pagination: PaginationModel
 }
 
