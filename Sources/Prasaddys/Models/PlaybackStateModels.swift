@@ -1,16 +1,19 @@
 import Foundation
 
 // MARK: - PlaybackStateResponse
-public struct PlaybackStateResponse: Codable {
-    public let playbackState: PlaybackState
-    public let pagination: PaginationModel
+struct PlaybackStateResponse: Codable {
+    let playbackState: PlaybackState
 }
 
 // MARK: - PlaybackState
-public struct PlaybackState: Codable {
-    public let playbackPosition: TimeInterval
-    public let isShuffleEnabled: Bool
-    public let shuffleContext: [String]?
-    public let currentPlayingTrack: String?
-    public let tracks: [Track]
+struct PlaybackState: Codable {
+    let playbackPosition: Double
+    let isShuffleEnabled: Bool
+    let shuffledTrackContext: [String]?
+    let originalTrackContext: [String]?
+    let currentPlayingTrack: String?
 }
+
+
+
+
