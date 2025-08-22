@@ -7,7 +7,7 @@ public struct MusicianModel: Decodable, Identifiable {
 }
 
 // MARK: - MusiciansResponse
-public struct MusiciansResponse: Decodable {
+public struct MusiciansResponse: Decodable, Encodable {
     public  let musicians: [String]
     public  let pagination: PaginationModel
 }
