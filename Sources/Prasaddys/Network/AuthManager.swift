@@ -341,23 +341,6 @@ public class AuthManager: NSObject {
         guard let userid = KeyChainUtil.getUserId(), !userid.isEmpty else { return }
                 
         guard let deviceUuid = KeyChainUtil.getDeviceUuid(), !deviceUuid.isEmpty else { return }
-//        if let email = KeyChainUtil.getUserEmail(), !email.isEmpty {
-//            bodyParams["email"] = email
-//        } else {
-//            print("⚠️ [AuthManager] Warning: User email not found in Keychain for refresh request. Proceeding without it.")
-//        }
-        
-//        if let userid = KeyChainUtil.getUserId(), !userid.isEmpty {
-//            bodyParams["userid"] = userid
-//        } else {
-//            print("⚠️ [AuthManager] Warning: User id not found in Keychain for refresh request. Proceeding without it.")
-//        }
-//        
-//        if let deviceUuid = KeyChainUtil.getDeviceUuid(), !deviceUuid.isEmpty {
-//            bodyParams["deviceid"] = deviceUuid
-//        } else {
-//            print("⚠️ [AuthManager] Warning: User device uuid not found in Keychain for refresh request. Proceeding without it.")
-//        }
         
         let request = createTokenRequest(with: [
             "grant_type": "refresh_token",
