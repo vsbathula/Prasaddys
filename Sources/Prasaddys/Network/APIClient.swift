@@ -284,7 +284,7 @@ public class APIClient: @unchecked Sendable {
         return trackDetail
     }
     
-    public func savePlaybackState(currentlyPlayingTrack: String, isShuffleEnabled: Bool, shuffledTracksList: [String], originalTracksList: [String]) async throws {
+    public func savePlaybackState(playBackPosition:Double, currentlyPlayingTrack: String, isShuffleEnabled: Bool, shuffledTracksList: [String], originalTracksList: [String]) async throws {
         let url = baseURL.appendingPathComponent("/user/playback/state/save")
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
@@ -299,7 +299,7 @@ public class APIClient: @unchecked Sendable {
         let parameters = PlaybackStatePayload(
             userId: userId,
             currentPlayingTrack: currentlyPlayingTrack,
-            playbackPosition: 0.0,
+            playbackPosition: playBackPosition,
             isShuffleEnabled: isShuffleEnabled,
             shuffledTrackContext: shuffledTracksList,
             originalTrackContext: originalTracksList
@@ -318,7 +318,7 @@ public class APIClient: @unchecked Sendable {
             throw error
         }
         
-        guard let playbackState = response.value else {
+        guard let _ = response.value else {
             throw NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "Playback state not saved."])
         }
         
