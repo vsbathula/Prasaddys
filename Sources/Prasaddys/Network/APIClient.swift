@@ -285,7 +285,7 @@ public class APIClient: @unchecked Sendable {
     }
     
     public func savePlaybackState(playBackPosition:Double, currentlyPlayingTrack: String, isShuffleEnabled: Bool, shuffledTracksList: [String], originalTracksList: [String]) async throws {
-        let url = baseURL.appendingPathComponent("/user/playback/state/save")
+        let url = baseURL.appendingPathComponent("/playback/state/save")
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
         if let token = authorizationToken {
@@ -330,7 +330,7 @@ public class APIClient: @unchecked Sendable {
             throw NSError(domain: "APIClient", code: 401, userInfo: [NSLocalizedDescriptionKey: "User ID not found."])
         }
         
-        let url = baseURL.appendingPathComponent("/user/playback/state/get/\(userId)")
+        let url = baseURL.appendingPathComponent("/playback/state/get/\(userId)")
         
         var headers: HTTPHeaders = ["Accept": "application/json"]
         if let token = authorizationToken {
