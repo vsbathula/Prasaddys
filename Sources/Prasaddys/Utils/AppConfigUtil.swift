@@ -31,11 +31,7 @@ public class AppConfigUtil {
     }
     
     public static func getPlexBaseUrl() -> String? {
-        return getOptionalInfoPlistValue(forKey: "PLEX_URL")
-    }
-
-    public static func getPlexToken() -> String? {
-        return getOptionalInfoPlistValue(forKey: "PLEX_TOKEN")
+        return getOptionalInfoPlistValue(forKey: "BASE_URL")
     }
     
     // MARK: - Private Helper Functions
@@ -66,16 +62,11 @@ public class AppConfigUtil {
     }
     
     public static func getThumbnailImageURL(from thumbnailPath: String) -> URL? {
-        guard let plexBaseUrl = getPlexBaseUrl(),
-              let plexToken = getPlexToken(),
-              var components = URLComponents(string: plexBaseUrl + thumbnailPath) else {
+        guard let baseUrl = getPlexBaseUrl(),
+              var components = URLComponents(string: baseUrl + thumbnailPath) else {
             print("❌ [AppConfigUtil] Cannot construct thumbnail URL: Missing Plex base URL, token, or invalid path.")
             return nil
         }
-
-        components.queryItems = (components.queryItems ?? []) + [
-            URLQueryItem(name: "X-Plex-Token", value: plexToken)
-        ]
         return components.url
     }
     
