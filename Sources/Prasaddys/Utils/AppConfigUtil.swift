@@ -30,7 +30,7 @@ public class AppConfigUtil {
         return getOptionalInfoPlistValue(forKey: "YT_API_KEY")
     }
     
-    public static func getPlexBaseUrl() -> String? {
+    public static func getBaseUrl() -> String? {
         return getOptionalInfoPlistValue(forKey: "BASE_URL")
     }
     
@@ -62,8 +62,8 @@ public class AppConfigUtil {
     }
     
     public static func getThumbnailImageURL(from thumbnailPath: String) -> URL? {
-        guard let baseUrl = getPlexBaseUrl(),
-              var components = URLComponents(string: baseUrl + thumbnailPath) else {
+        guard let baseUrl = getBaseUrl(),
+              let components = URLComponents(string: baseUrl + thumbnailPath) else {
             print("❌ [AppConfigUtil] Cannot construct thumbnail URL: Missing Plex base URL, token, or invalid path.")
             return nil
         }
